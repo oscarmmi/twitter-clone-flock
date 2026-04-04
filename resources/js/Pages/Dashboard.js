@@ -15,6 +15,9 @@ export default function Dashboard(props) {
     // Safely stringify the tweets array and escape double quotes for the HTML attribute
     const tweetsData = JSON.stringify(tweets || []).replace(/"/g, '&quot;');
 
+    // Expose auth state globally for the centralized TweetCard like button
+    window._isLoggedIn = !!user;
+
     return `
     <div x-data="{
         activeTab: 'for-you',

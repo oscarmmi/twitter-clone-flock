@@ -51,10 +51,51 @@ export function TweetCard() {
                         <div class="p-2 group-hover/btn:bg-green-500/10 rounded-full">${Icons.retweet}</div>
                         <span x-text="tweet.retweets_count ?? tweet.retweets ?? 0" class="text-xs"></span>
                     </button>
-                    <button class="flex items-center space-x-2 hover:text-pink-400 transition group/btn">
-                        <div class="p-2 group-hover/btn:bg-pink-500/10 rounded-full">${Icons.like}</div>
-                        <span x-text="tweet.likes_count ?? tweet.likes ?? 0" class="text-xs"></span>
-                    </button>
+                    <!-- Like button with optimistic UI -->
+                    <div x-data="{
+                        liked: tweet.liked_by_user ?? false,
+                        count: tweet.likes_count ?? tweet.likes ?? 0,
+                        loading: false,
+                        toggle() {
+                            if (this.loading) return;
+
+                            // Redirect to login if not authenticated
+                            if (!window._isLoggedIn) {
+                                window.location.href = '/login';
+                                return;
+                            }
+
+                            // Optimistic update
+                            this.liked = !this.liked;
+                            this.count += this.liked ? 1 : -1;
+                            this.loading = true;
+
+                            axios.post('/tweets/' + tweet.id + '/like')
+                                .then(res => {
+                                    this.liked = res.data.liked;
+                                    this.count = res.data.likes_count;
+                                })
+                                .catch(() => {
+                                    // Rollback on failure
+                                    this.liked = !this.liked;
+                                    this.count += this.liked ? 1 : -1;
+                                })
+                                .finally(() => { this.loading = false; });
+                        }
+                    }">
+                        <button
+                            @click.stop="toggle()"
+                            :class="liked ? 'text-pink-500' : 'text-zinc-500 hover:text-pink-400'"
+                            class="flex items-center space-x-2 transition group/btn"
+                        >
+                            <div :class="liked ? 'bg-pink-500/10' : 'group-hover/btn:bg-pink-500/10'" class="p-2 rounded-full transition">
+                                <svg class="w-[18px] h-[18px] transition-transform" :class="{ 'scale-125': liked }" fill="none" :fill="liked ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.884 13.19c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3c-4.379-2.55-7.029-5.19-8.382-7.67-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z"/>
+                                </svg>
+                            </div>
+                            <span x-text="count" class="text-xs"></span>
+                        </button>
+                    </div>
                     <!-- Share button with dropdown -->
                     <div class="relative" x-data="{ shareOpen: false }">
                         <button @click.stop="shareOpen = !shareOpen" class="flex items-center space-x-2 hover:text-blue-400 transition group/btn">

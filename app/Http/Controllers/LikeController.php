@@ -14,10 +14,15 @@ class LikeController extends Controller
 
         if ($user->likesTweet($tweet)) {
             $user->likes()->detach($tweet->id);
+            $liked = false;
         } else {
             $user->likes()->attach($tweet->id);
+            $liked = true;
         }
 
-        return back();
+        return response()->json([
+            'liked' => $liked,
+            'likes_count' => $tweet->likes()->count(),
+        ]);
     }
 }

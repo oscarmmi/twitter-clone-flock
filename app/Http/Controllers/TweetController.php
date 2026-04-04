@@ -10,6 +10,8 @@ class TweetController extends Controller
 {
     public function welcome(Request $request)
     {
+        $authUser = Auth::user();
+
         $tweets = Tweet::whereNull('parent_id') // only original tweets, no replies
             ->with(['user', 'likes', 'retweets', 'replies'])
             ->latest()
@@ -24,6 +26,7 @@ class TweetController extends Controller
                 'retweets' => $tweet->retweets->count(),
                 'replies' => $tweet->replies->count(),
                 'avatar' => $tweet->user->avatar ?? "https://i.pravatar.cc/150?u=" . $tweet->user_id,
+                'liked_by_user' => $authUser ? $tweet->likes->contains('id', $authUser->id) : false,
             ]);
 
         return inertia('Welcome', [
@@ -54,6 +57,7 @@ class TweetController extends Controller
                 'retweets' => $tweet->retweets->count(),
                 'replies' => $tweet->replies->count(),
                 'avatar' => $tweet->user->avatar ?? "https://i.pravatar.cc/150?u=" . $tweet->user_id,
+                'liked_by_user' => $tweet->likes->contains('id', $user->id),
             ]);
 
         return inertia('Dashboard', [

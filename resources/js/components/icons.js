@@ -55,9 +55,88 @@ export function TweetCard() {
                         <div class="p-2 group-hover/btn:bg-pink-500/10 rounded-full">${Icons.like}</div>
                         <span x-text="tweet.likes_count ?? tweet.likes ?? 0" class="text-xs"></span>
                     </button>
-                    <button class="flex items-center space-x-2 hover:text-blue-400 transition group/btn">
-                        <div class="p-2 group-hover/btn:bg-blue-500/10 rounded-full">${Icons.share}</div>
-                    </button>
+                    <!-- Share button with dropdown -->
+                    <div class="relative" x-data="{ shareOpen: false }">
+                        <button @click.stop="shareOpen = !shareOpen" class="flex items-center space-x-2 hover:text-blue-400 transition group/btn">
+                            <div class="p-2 group-hover/btn:bg-blue-500/10 rounded-full">${Icons.share}</div>
+                        </button>
+
+                        <!-- Share Dropdown -->
+                        <div
+                            x-show="shareOpen"
+                            @click.away="shareOpen = false"
+                            x-transition:enter="transition ease-out duration-150"
+                            x-transition:enter-start="opacity-0 scale-95"
+                            x-transition:enter-end="opacity-100 scale-100"
+                            x-transition:leave="transition ease-in duration-100"
+                            x-transition:leave-start="opacity-100 scale-100"
+                            x-transition:leave-end="opacity-0 scale-95"
+                            class="absolute bottom-full right-0 mb-2 w-56 bg-black border border-zinc-800 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.5)] overflow-hidden z-50"
+                        >
+                            <!-- Copy Link -->
+                            <button
+                                @click.stop="
+                                    const url = window.location.origin + '/tweets/' + tweet.id;
+                                    navigator.clipboard.writeText(url).then(() => {
+                                        $el.querySelector('span').textContent = 'Copied!';
+                                        setTimeout(() => { $el.querySelector('span').textContent = 'Copy link'; shareOpen = false; }, 1500);
+                                    });
+                                "
+                                class="flex items-center space-x-3 w-full px-4 py-3 hover:bg-zinc-900 transition text-zinc-100 text-sm font-bold"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                </svg>
+                                <span>Copy link</span>
+                            </button>
+
+                            <!-- Native Share (mobile/supported browsers) -->
+                            <button
+                                x-show="!!navigator.share"
+                                @click.stop="
+                                    navigator.share({
+                                        title: (tweet.user?.name || tweet.user) + ' on Flock',
+                                        text: tweet.body || tweet.content,
+                                        url: window.location.origin + '/tweets/' + tweet.id
+                                    }).then(() => { shareOpen = false; }).catch(() => {});
+                                "
+                                class="flex items-center space-x-3 w-full px-4 py-3 hover:bg-zinc-900 transition text-zinc-100 text-sm font-bold"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                                </svg>
+                                <span>Share via...</span>
+                            </button>
+
+                            <div class="border-t border-zinc-800 my-1"></div>
+
+                            <!-- Share to WhatsApp -->
+                            <a
+                                :href="'https://wa.me/?text=' + encodeURIComponent((tweet.body || tweet.content) + ' ' + window.location.origin + '/tweets/' + tweet.id)"
+                                target="_blank"
+                                @click="shareOpen = false"
+                                class="flex items-center space-x-3 w-full px-4 py-3 hover:bg-zinc-900 transition text-zinc-100 text-sm font-bold"
+                            >
+                                <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                </svg>
+                                <span>Share to WhatsApp</span>
+                            </a>
+
+                            <!-- Share to Telegram -->
+                            <a
+                                :href="'https://t.me/share/url?url=' + encodeURIComponent(window.location.origin + '/tweets/' + tweet.id) + '&text=' + encodeURIComponent(tweet.body || tweet.content)"
+                                target="_blank"
+                                @click="shareOpen = false"
+                                class="flex items-center space-x-3 w-full px-4 py-3 hover:bg-zinc-900 transition text-zinc-100 text-sm font-bold"
+                            >
+                                <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                                </svg>
+                                <span>Share to Telegram</span>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

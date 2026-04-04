@@ -11,6 +11,59 @@ class FakeDataSeeder extends Seeder
 {
     public function run(): void
     {
+        $hashtags = [
+            ['#Laravel', '#PHP', '#WebDev'],
+            ['#OpenSource', '#DevCommunity', '#GitHub'],
+            ['#CSS', '#Frontend', '#WebDesign'],
+            ['#Debugging', '#CodeLife', '#100DaysOfCode'],
+            ['#Coffee', '#DevLife', '#Programming'],
+            ['#CleanCode', '#BestPractices', '#SoftwareEngineering'],
+            ['#Motivation', '#GrowthMindset', '#Tech'],
+            ['#Laravel', '#PHP', '#BackendDev'],
+            ['#OpenSource', '#GitHub', '#SoftwareDevelopment'],
+            ['#Productivity', '#Automation', '#DevTips'],
+            ['#WorkLifeBalance', '#RemoteWork', '#TechLife'],
+            ['#BookRecommendation', '#DevBooks', '#LearningEveryday'],
+            ['#MentalHealth', '#TechLife', '#Mindfulness'],
+            ['#FunnyDev', '#CodeLife', '#Relatable'],
+            ['#PairProgramming', '#Teamwork', '#AgileLife'],
+            ['#DevOps', '#BadPractices', '#FridayFeeling'],
+            ['#Documentation', '#TechTips', '#DevLife'],
+            ['#Productivity', '#MultiMonitor', '#SetupGoals'],
+            ['#HotTake', '#CodingWars', '#TabsVsSpaces'],
+            ['#TwitterDev', '#OpenSource', '#BuildingInPublic'],
+            ['#Developer', '#SelfCare', '#TechTips'],
+            ['#APIDesign', '#BackendDev', '#WebDev'],
+            ['#Refactoring', '#LegacyCode', '#TechLife'],
+            ['#PostgreSQL', '#Databases', '#BackendDev'],
+            ['#BuildInPublic', '#IndieHacker', '#StartupLife'],
+            ['#CleanCode', '#Programming', '#DevTips'],
+            ['#Milestone', '#GrowthMindset', '#Community'],
+            ['#Architecture', '#SoftwareDesign', '#DevTips'],
+            ['#VimLife', '#Editors', '#FunnyDev'],
+            ['#LearningEveryday', '#Growth', '#DevLife'],
+            ['#SQL', '#Databases', '#LevelUp'],
+            ['#DesignSystem', '#UX', '#Frontend'],
+            ['#Redis', '#Backend', '#Architecture'],
+            ['#ColorPalette', '#UIDesign', '#WebDesign'],
+            ['#Architecture', '#Microservices', '#BackendDev'],
+            ['#Debugging', '#FunnyDev', '#DevLife'],
+            ['#MoodOfTheDay', '#DevLife', '#Coding'],
+            ['#ImposterSyndrome', '#YouGotThis', '#100DaysOfCode'],
+            ['#SoftSkills', '#CareerGrowth', '#TechLife'],
+            ['#SoftwareEngineering', '#Agile', '#DevTips'],
+            ['#CodeReview', '#CleanCode', '#Metrics'],
+            ['#Kubernetes', '#DevOps', '#CloudNative'],
+            ['#TypeScript', '#JavaScript', '#WebDev'],
+            ['#CareerAdvice', '#JuniorDev', '#Mentorship'],
+            ['#OpenSource', '#README', '#Documentation'],
+            ['#LocalDev', '#DevLife', '#Docker'],
+            ['#Agile', '#Meetings', '#Productivity'],
+            ['#ShipIt', '#MVP', '#StartupLife'],
+            ['#DNS', '#DevOps', '#AlwaysDNS'],
+            ['#SideProject', '#IndieHacker', '#BuildInPublic'],
+        ];
+
         $tweetTemplates = [
             "Just shipped a new feature 🚀 The grind never stops.",
             "Hot take: dark mode should be the default everywhere.",
@@ -102,10 +155,16 @@ class FakeDataSeeder extends Seeder
             shuffle($tweets);
 
             foreach (array_slice($tweets, 0, 50) as $j => $body) {
+                // Pick 1–2 hashtags from the matching group (same index as tweet template)
+                $tagGroup = $hashtags[$j % count($hashtags)];
+                $count    = rand(1, 2);
+                shuffle($tagGroup);
+                $tags = implode(' ', array_slice($tagGroup, 0, $count));
+
                 Tweet::create([
                     'user_id'    => $user->id,
-                    'body'       => $body,
-                    'created_at' => now()->subMinutes(rand(1, 43200)), // random time in last 30 days
+                    'body'       => $body . "\n\n" . $tags,
+                    'created_at' => now()->subMinutes(rand(1, 43200)),
                     'updated_at' => now(),
                 ]);
             }

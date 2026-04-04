@@ -1,3 +1,5 @@
+import { Icons, TweetCard } from '../components/icons.js';
+
 export default function Welcome(props) {
     const user = props.auth.user;
     const tweets = props.tweets;
@@ -152,36 +154,7 @@ export default function Welcome(props) {
 
                 <!-- Feed -->
                 <div class="divide-y divide-zinc-800">
-                    <template x-for="tweet in tweets" :key="tweet.id">
-                        <div class="p-4 hover:bg-white/[0.03] transition cursor-pointer flex space-x-3 group border-b border-zinc-800">
-                            <img :src="tweet.avatar" class="w-10 h-10 rounded-full shrink-0" alt="">
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center space-x-1">
-                                    <span class="font-bold hover:underline" x-text="tweet.user"></span>
-                                    <span class="text-zinc-500 text-sm truncate" x-text="tweet.handle"></span>
-                                    <span class="text-zinc-500 text-sm">·</span>
-                                    <span class="text-zinc-500 text-sm" x-text="tweet.time"></span>
-                                </div>
-                                <p class="mt-1 text-zinc-100 whitespace-pre-wrap" x-text="tweet.content"></p>
-                                
-                                <!-- Actions -->
-                                <div class="flex justify-between mt-3 text-zinc-500 max-w-md">
-                                    <div class="flex items-center space-x-2 group-hover:text-blue-500 transition">
-                                        <div class="p-2 group-hover:bg-blue-500/10 rounded-full"><svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25-9 3.694-9 8.25c0 1.635.523 3.16 1.442 4.475l-.822 2.522 2.592-.733c1.114.652 2.392 1.01 3.788 1.01z"/></svg></div>
-                                        <span x-text="tweet.replies" class="text-xs"></span>
-                                    </div>
-                                    <div class="flex items-center space-x-2 group-hover:text-green-500 transition">
-                                        <div class="p-2 group-hover:bg-green-500/10 rounded-full"><svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg></div>
-                                        <span x-text="tweet.retweets" class="text-xs"></span>
-                                    </div>
-                                    <div class="flex items-center space-x-2 group-hover:text-pink-500 transition">
-                                        <div class="p-2 group-hover:bg-pink-500/10 rounded-full"><svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg></div>
-                                        <span x-text="tweet.likes" class="text-xs"></span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
+                    ${TweetCard()}
                 </div>
             </main>
 

@@ -9,7 +9,7 @@ use App\Http\Controllers\LikeController;
 use App\Http\Controllers\FollowController;
 
 Route::get('/', function () {
-    return view('welcome');
+    return inertia('Welcome');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

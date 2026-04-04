@@ -4,17 +4,28 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <!-- Sidebar (Left) -->
                 <div class="md:col-span-1">
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
-                        <h3 class="font-bold text-xl mb-4">@ {{ Auth::user()->name }}</h3>
-                        <div class="flex justify-between text-sm text-gray-600">
-                            <div>
-                                <span class="font-bold text-black">{{ Auth::user()->following()->count() }}</span> Following
-                            </div>
-                            <div>
-                                <span class="font-bold text-black">{{ Auth::user()->followers()->count() }}</span> Followers
+                    @auth
+                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
+                            <h3 class="font-bold text-xl mb-4">@ {{ Auth::user()->name }}</h3>
+                            <div class="flex justify-between text-sm text-gray-600">
+                                <div>
+                                    <span class="font-bold text-black">{{ Auth::user()->following()->count() }}</span> Following
+                                </div>
+                                <div>
+                                    <span class="font-bold text-black">{{ Auth::user()->followers()->count() }}</span> Followers
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    @else
+                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6 text-center">
+                            <h3 class="font-bold text-xl mb-4">New to Twitter?</h3>
+                            <p class="text-gray-500 mb-4 text-sm">Sign up now to get your own personalized timeline!</p>
+                            <div class="space-y-2">
+                                <a href="{{ route('register') }}" class="block w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-full hover:bg-blue-600 transition">Create account</a>
+                                <a href="{{ route('login') }}" class="block w-full border border-gray-300 font-bold py-2 px-4 rounded-full hover:bg-gray-50 transition text-black">Log in</a>
+                            </div>
+                        </div>
+                    @endauth
 
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                         <h3 class="font-bold text-lg mb-4">Trending</h3>
@@ -28,24 +39,26 @@
 
                 <!-- Feed (Center) -->
                 <div class="md:col-span-2">
-                    <!-- New Tweet Form -->
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
-                        <form action="{{ route('tweets.store') }}" method="POST">
-                            @csrf
-                            <textarea 
-                                name="body" 
-                                class="w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm resize-none" 
-                                placeholder="What's happening?"
-                                rows="3"
-                                required
-                            ></textarea>
-                            <div class="flex justify-end mt-4">
-                                <x-primary-button>
-                                    Tweet
-                                </x-primary-button>
-                            </div>
-                        </form>
-                    </div>
+                    <!-- New Tweet Form (Only for logged in users) -->
+                    @auth
+                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
+                            <form action="{{ route('tweets.store') }}" method="POST">
+                                @csrf
+                                <textarea 
+                                    name="body" 
+                                    class="w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm resize-none" 
+                                    placeholder="What's happening?"
+                                    rows="3"
+                                    required
+                                ></textarea>
+                                <div class="flex justify-end mt-4">
+                                    <x-primary-button>
+                                        Tweet
+                                    </x-primary-button>
+                                </div>
+                            </form>
+                        </div>
+                    @endauth
 
                     <!-- Timeline -->
                     <div class="space-y-4">
@@ -79,22 +92,32 @@
                                                 <span>{{ $tweet->replies->count() }}</span>
                                             </button>
 
-                                            <form action="{{ route('tweets.retweet', $tweet) }}" method="POST">
-                                                @csrf
-                                                <button type="submit" class="flex items-center space-x-2 hover:text-green-500 transition">
+                                            @auth
+                                                <form action="{{ route('tweets.retweet', $tweet) }}" method="POST">
+                                                    @csrf
+                                                    <button type="submit" class="flex items-center space-x-2 hover:text-green-500 transition">
+                                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                                        <span>{{ $tweet->retweets->count() }}</span>
+                                                    </button>
+                                                </form>
+
+                                                <form action="{{ route('tweets.like', $tweet) }}" method="POST">
+                                                    @csrf
+                                                    <button type="submit" class="flex items-center space-x-2 {{ Auth::user()->likesTweet($tweet) ? 'text-red-500' : 'hover:text-red-500' }} transition">
+                                                        <svg class="h-5 w-5" fill="{{ Auth::user()->likesTweet($tweet) ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                                                        <span>{{ $tweet->likes->count() }}</span>
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <div class="flex items-center space-x-2">
                                                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                                     <span>{{ $tweet->retweets->count() }}</span>
-                                                </button>
-                                            </form>
-
-                                            <form action="{{ route('tweets.like', $tweet) }}" method="POST">
-                                                @csrf
-                                                <button type="submit" class="flex items-center space-x-2 {{ Auth::user()->likesTweet($tweet) ? 'text-red-500' : 'hover:text-red-500' }} transition">
-                                                    <svg class="h-5 w-5" fill="{{ Auth::user()->likesTweet($tweet) ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                                                     <span>{{ $tweet->likes->count() }}</span>
-                                                </button>
-                                            </form>
-                                        </div>
+                                                </div>
+                                            @endauth
                                     </div>
                                 </div>
                             </div>
@@ -115,17 +138,21 @@
                         <h3 class="font-bold text-lg mb-4">Who to follow</h3>
                         <div class="space-y-4">
                             @php
-                                $suggestedUsers = \App\Models\User::where('id', '!=', Auth::id())->limit(3)->get();
+                                $suggestedUsers = \App\Models\User::when(Auth::check(), function($q) {
+                                    return $q->where('id', '!=', Auth::id());
+                                })->limit(3)->get();
                             @endphp
                             @foreach($suggestedUsers as $suggestedUser)
                                 <div class="flex items-center justify-between">
                                     <a href="{{ route('user.show', $suggestedUser) }}" class="font-medium hover:underline">{{ $suggestedUser->name }}</a>
-                                    <form action="{{ route('users.follow', $suggestedUser) }}" method="POST">
-                                        @csrf
-                                        <button type="submit" class="text-xs bg-black text-white px-3 py-1 rounded-full font-bold">
-                                            {{ Auth::user()->follows($suggestedUser) ? 'Unfollow' : 'Follow' }}
-                                        </button>
-                                    </form>
+                                    @auth
+                                        <form action="{{ route('users.follow', $suggestedUser) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="text-xs bg-black text-white px-3 py-1 rounded-full font-bold">
+                                                {{ Auth::user()->follows($suggestedUser) ? 'Unfollow' : 'Follow' }}
+                                            </button>
+                                        </form>
+                                    @endauth
                                 </div>
                             @endforeach
                         </div>

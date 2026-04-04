@@ -1,21 +1,5 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Twitter Clone - Alpine.js & Tailwind</title>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        [x-cloak] { display: none !important; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
-    </style>
-</head>
-<body class="bg-black text-zinc-100 font-sans selection:bg-blue-500/30">
-
+export default function Welcome(props) {
+    return `
     <div x-data="{
         activeTab: 'for-you',
         tweetContent: '',
@@ -46,7 +30,7 @@
                 }, 500);
             }
         }
-    }" class="flex min-h-screen max-w-[1300px] mx-auto overflow-x-hidden">
+    }" class="flex min-h-screen max-w-[1300px] mx-auto overflow-x-hidden bg-black text-zinc-100 font-sans selection:bg-blue-500/30">
 
         <!-- Sidebar Navigation -->
         <aside class="w-[72px] xl:w-[275px] flex flex-col items-center xl:items-start p-2 sm:p-4 sticky top-0 h-screen overflow-y-auto">
@@ -54,26 +38,30 @@
                 <svg class="w-8 h-8 fill-zinc-100" viewBox="0 0 24 24"><path d="M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z"/></svg>
             </div>
             
-            <nav class="flex-1 space-y-1 w-full">
-                <template x-for="item in [
-                    { icon: 'M12 2.25l-9.156 7.145c-.477.373-.844.931-.844 1.605v8c0 1.104.896 2 2 2h4a1 1 0 001-1v-4h2v4a1 1 0 001 1h4c1.104 0 2-.896 2-2v-8c0-.674-.367-1.232-.844-1.605L12 2.25z', label: 'Home', active: true },
-                    { icon: 'M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.384-.073.53-.22c.293-.293.293-.767 0-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-7.5-3.365-7.5-7.5z', label: 'Explore' },
-                    { icon: 'M4.406 3.342l7.166 7.166a1.5 1.5 0 002.122 0l7.166-7.166a1.5 1.5 0 10-2.122-2.122L12 7.732 5.528 1.22l-1.122 2.122zm15.188 17.316l-7.166-7.166a1.5 1.5 0 00-2.122 0l-7.166 7.166a1.5 1.5 0 102.122 2.122L12 16.268l6.472 6.512 1.122-2.122z', label: 'Notifications' },
-                    { icon: 'M1.946 9.315c-.522-.174-.527-.455.01-.634l19.087-6.362c.529-.176.832.12.684.638l-5.454 19.086c-.15.529-.5.485-.778-.1l-3.951-8.23-8.598-4.4zm9.366 1.834l1.399 2.915 2.179-7.625-3.578 4.71z', label: 'Messages' },
-                    { icon: 'M3 3h18v18H3V3zm16 16V5H5v14h14zM7 7h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z', label: 'Lists' },
-                    { icon: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z', label: 'Profile' }
-                ]">
-                    <a href="#" :class="item.active ? 'font-bold' : ''" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 group w-fit">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" :d="item.icon" />
-                        </svg>
-                        <span x-text="item.label" class="text-xl hidden xl:inline pr-4"></span>
-                    </a>
-                </template>
+            <nav class="flex-1 space-y-1 w-full text-zinc-100">
+                <a href="#" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 group w-fit font-bold">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    <span class="text-xl hidden xl:inline pr-4">Home</span>
+                </a>
+                <a href="#" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 group w-fit">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                    <span class="text-xl hidden xl:inline pr-4">Explore</span>
+                </a>
+                <a href="#" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 group w-fit">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+                    <span class="text-xl hidden xl:inline pr-4">Notifications</span>
+                </a>
+                <a href="#" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 group w-fit">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>
+                    <span class="text-xl hidden xl:inline pr-4">Messages</span>
+                </a>
+                <a href="#" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 group w-fit">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                    <span class="text-xl hidden xl:inline pr-4">Profile</span>
+                </a>
             </nav>
 
             <button class="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-bold py-3 xl:w-full rounded-full flex items-center justify-center transition-all duration-200 mt-4 mb-4">
-                <svg x-cloak class="w-6 h-6 xl:hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M8.8 7.2H5.6V3.9c0-.4-.3-.8-.8-.8s-.8.4-.8.8v3.3H.8c-.4 0-.8.3-.8.8s.4.8.8.8h3.3v3.3c0 .4.3.8.8.8s.8-.4.8-.8V8.8h3.3c.4 0 .8-.3.8-.8s-.4-.8-.8-.8z"/></svg>
                 <span class="hidden xl:inline">Post</span>
             </button>
 
@@ -84,7 +72,6 @@
                     <p class="font-bold text-sm" x-text="user.name"></p>
                     <p class="text-zinc-500 text-sm" x-text="user.handle"></p>
                 </div>
-                <svg class="hidden xl:block w-5 h-5 text-zinc-500 group-hover:text-zinc-100" fill="currentColor" viewBox="0 0 24 24"><path d="M12 15.25a.74.74 0 01-.53-.22L6.22 9.78a.75.75 0 111.06-1.06L12 13.44l4.72-4.72a.75.75 0 111.06 1.06l-5.25 5.25a.74.74 0 01-.53.22z"/></svg>
             </div>
         </aside>
 
@@ -119,12 +106,9 @@
                     
                     <div class="mt-4 pt-3 border-t border-zinc-800 flex justify-between items-center">
                         <div class="flex space-x-3 text-[#1d9bf0]">
-                            <!-- Mock Icons -->
-                            <template x-for="i in 5">
-                                <span class="p-2 hover:bg-blue-500/10 rounded-full cursor-pointer transition">
-                                    <div class="w-5 h-5 border border-current rounded-sm"></div>
-                                </span>
-                            </template>
+                            <div class="p-2 hover:bg-blue-500/10 rounded-full cursor-pointer transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12.75a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+                            </div>
                         </div>
                         <button 
                             @click="postTweet()"
@@ -141,7 +125,7 @@
             <!-- Feed -->
             <div class="divide-y divide-zinc-800">
                 <template x-for="tweet in tweets" :key="tweet.id">
-                    <div class="p-4 hover:bg-zinc-900/50 transition cursor-pointer flex space-x-3 group animate-in fade-in duration-500">
+                    <div class="p-4 hover:bg-zinc-900/50 transition cursor-pointer flex space-x-3 group border-b border-zinc-800">
                         <img :src="tweet.avatar" class="w-10 h-10 rounded-full shrink-0" alt="">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center space-x-1">
@@ -155,19 +139,16 @@
                             <!-- Actions -->
                             <div class="flex justify-between mt-3 text-zinc-500 max-w-md">
                                 <div class="flex items-center space-x-2 group-hover:text-blue-500 transition">
-                                    <div class="p-2 group-hover:bg-blue-500/10 rounded-full"><svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M3 10h18l-9 9-9-9z"/></svg></div>
+                                    <div class="p-2 group-hover:bg-blue-500/10 rounded-full"><svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25-9 3.694-9 8.25c0 1.635.523 3.16 1.442 4.475l-.822 2.522 2.592-.733c1.114.652 2.392 1.01 3.788 1.01z"/></svg></div>
                                     <span x-text="tweet.replies" class="text-xs"></span>
                                 </div>
                                 <div class="flex items-center space-x-2 group-hover:text-green-500 transition">
-                                    <div class="p-2 group-hover:bg-green-500/10 rounded-full"><svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M3 3h18v18H3z"/></svg></div>
+                                    <div class="p-2 group-hover:bg-green-500/10 rounded-full"><svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg></div>
                                     <span x-text="tweet.retweets" class="text-xs"></span>
                                 </div>
                                 <div class="flex items-center space-x-2 group-hover:text-pink-500 transition">
-                                    <div class="p-2 group-hover:bg-pink-500/10 rounded-full"><svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M12 21l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.18L12 21z"/></svg></div>
+                                    <div class="p-2 group-hover:bg-pink-500/10 rounded-full"><svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg></div>
                                     <span x-text="tweet.likes" class="text-xs"></span>
-                                </div>
-                                <div class="flex items-center space-x-2 group-hover:text-blue-500 transition">
-                                    <div class="p-2 group-hover:bg-blue-500/10 rounded-full"><svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M3 10V3h18v7M3 14h18v7H3v-7z"/></svg></div>
                                 </div>
                             </div>
                         </div>
@@ -181,7 +162,7 @@
             <!-- Search -->
             <div class="sticky top-0 bg-black pt-1 pb-4 z-40">
                 <div class="flex items-center space-x-4 bg-zinc-900 p-3 rounded-full border border-transparent focus-within:border-[#1d9bf0] focus-within:bg-black transition group">
-                    <svg class="w-5 h-5 text-zinc-500 group-focus-within:text-[#1d9bf0]" fill="currentColor" viewBox="0 0 24 24"><path d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.384-.073.53-.22c.293-.293.293-.767 0-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-3.365-7.5-7.5-7.5z"/></svg>
+                    <svg class="w-5 h-5 text-zinc-500 group-focus-within:text-[#1d9bf0]" fill="currentColor" viewBox="0 0 24 24"><path d="M21.172 19.414l-4.143-4.142A7 7 0 1010 17a7 7 0 105.272-2.372l4.142 4.142c.488.488 1.28.488 1.768 0 .488-.488.488-1.28 0-1.768zM10 15a5 5 0 110-10 5 5 0 010 10z"/></svg>
                     <input type="text" placeholder="Search" class="bg-transparent border-none focus:ring-0 w-full placeholder-zinc-500">
                 </div>
             </div>
@@ -189,51 +170,41 @@
             <!-- Trends -->
             <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
                 <h2 class="text-xl font-bold p-4">Trends for you</h2>
-                <template x-for="i in 5">
-                    <div class="px-4 py-3 hover:bg-zinc-800 transition cursor-pointer flex justify-between">
-                        <div>
-                            <p class="text-zinc-500 text-xs">Trending in Technology</p>
-                            <p class="font-bold">#Laravel</p>
-                            <p class="text-zinc-500 text-xs">20.5K posts</p>
+                <div class="divide-y divide-zinc-800">
+                    <template x-for="i in 5">
+                        <div class="px-4 py-3 hover:bg-zinc-800 transition cursor-pointer flex justify-between">
+                            <div>
+                                <p class="text-zinc-500 text-xs">Trending in Technology</p>
+                                <p class="font-bold">#Laravel</p>
+                                <p class="text-zinc-500 text-xs">20.5K posts</p>
+                            </div>
                         </div>
-                        <span class="text-zinc-500 font-bold">...</span>
-                    </div>
-                </template>
-                <a href="#" class="block p-4 text-[#1d9bf0] hover:bg-zinc-800 transition">Show more</a>
+                    </template>
+                </div>
+                <a href="#" class="block p-4 text-[#1d9bf0] hover:bg-zinc-800 transition text-sm">Show more</a>
             </div>
 
-            <!-- Who to follow -->
             <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
                 <h2 class="text-xl font-bold p-4">Who to follow</h2>
-                <template x-for="user in ['Antigravity', 'Taylor Otwell', 'InertiaJS']">
-                    <div class="px-4 py-3 hover:bg-zinc-800 transition cursor-pointer flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            <div class="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
-                                <img src="https://i.pravatar.cc/100?u=follow" alt="">
+                <div class="divide-y divide-zinc-800">
+                    <template x-for="user in ['Antigravity', 'Taylor Otwell', 'InertiaJS']">
+                        <div class="px-4 py-3 hover:bg-zinc-800 transition cursor-pointer flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
+                                     <img src="https://i.pravatar.cc/100?u=follow" alt="">
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="font-bold text-sm truncate" x-text="user"></p>
+                                    <p class="text-zinc-500 text-xs truncate" x-text="'@' + user.toLowerCase().replace(' ', '')"></p>
+                                </div>
                             </div>
-                            <div class="min-w-0">
-                                <p class="font-bold text-sm truncate" x-text="user"></p>
-                                <p class="text-zinc-500 text-xs truncate" x-text="'@' + user.toLowerCase().replace(' ', '')"></p>
-                            </div>
+                            <button class="bg-zinc-100 text-black px-4 py-1.5 rounded-full font-bold text-sm hover:bg-zinc-200 transition">Follow</button>
                         </div>
-                        <button class="bg-zinc-100 text-black px-4 py-1.5 rounded-full font-bold text-sm hover:bg-zinc-200 transition">Follow</button>
-                    </div>
-                </template>
-                <a href="#" class="block p-4 text-[#1d9bf0] hover:bg-zinc-800 transition">Show more</a>
+                    </template>
+                </div>
             </div>
             
-            <!-- Footer Links -->
-            <div class="px-4 text-zinc-500 text-xs flex flex-wrap gap-x-3 gap-y-1">
-                <span>Terms of Service</span>
-                <span>Privacy Policy</span>
-                <span>Cookie Policy</span>
-                <span>Accessibility</span>
-                <span>Ads info</span>
-                <span>© 2026 X Corp.</span>
-            </div>
         </aside>
-
     </div>
-
-</body>
-</html>
+    `;
+}

@@ -1,4 +1,4 @@
-export default function Welcome(props) {
+export default function Dashboard(props) {
     const user = props.auth.user;
     const tweets = props.tweets;
     
@@ -17,24 +17,33 @@ export default function Welcome(props) {
     <div x-data="{
         activeTab: 'for-you',
         tweetContent: '',
+        modalTweetContent: '',
         isLoading: false,
+        showComposeModal: false,
         user: ${userData},
         isLoggedIn: ${!!user},
         tweets: ${tweetsData},
-        postTweet() {
+        postTweet(content = null) {
+            const body = content !== null ? content : this.tweetContent;
+            
             if (!this.isLoggedIn) {
                 window.location.href = '/login';
                 return;
             }
-            if (this.tweetContent.trim()) {
+            if (body.trim()) {
                 this.isLoading = true;
                 
                 axios.post('/tweets', {
-                    body: this.tweetContent
+                    body: body
                 })
                 .then(() => {
-                    this.tweetContent = '';
                     this.isLoading = false;
+                    if (content !== null) {
+                        this.modalTweetContent = '';
+                        this.showComposeModal = false;
+                    } else {
+                        this.tweetContent = '';
+                    }
                     window.location.reload();
                 })
                 .catch(error => {
@@ -43,6 +52,11 @@ export default function Welcome(props) {
                     alert(message);
                 });
             }
+        },
+        logout() {
+            axios.post('/logout')
+                .then(() => window.location.href = '/')
+                .catch(() => window.location.href = '/');
         }
     }" class="flex min-h-screen w-full bg-black text-zinc-100 font-sans selection:bg-blue-500/30">
         
@@ -56,7 +70,7 @@ export default function Welcome(props) {
                 </div>
                 
                 <nav class="flex-1 space-y-1 w-full text-zinc-100">
-                    <a href="/" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 group w-fit font-bold">
+                    <a href="/dashboard" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 group w-fit font-bold">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                         <span class="text-xl hidden xl:inline pr-4">Home</span>
                     </a>
@@ -70,35 +84,27 @@ export default function Welcome(props) {
                     </a>
                 </nav>
 
-                <template x-if="isLoggedIn">
-                    <button class="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-bold py-3 xl:w-full rounded-full flex items-center justify-center transition-all duration-200 mt-4 mb-4">
-                        <span class="hidden xl:inline">Post</span>
-                    </button>
-                </template>
+                <button @click="showComposeModal = true" class="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-bold py-3 xl:w-full rounded-full flex items-center justify-center transition-all duration-200 mt-4 mb-4">
+                    <span class="hidden xl:inline">Post</span>
+                    <svg class="w-6 h-6 xl:hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M8.832 21.993a10.086 10.086 0 01-1.832-.167c-1.354-.263-2.582-.876-3.535-1.743A10.15 10.15 0 011.007 16.55a10.15 10.15 0 01.353-6.526c.495-1.253 1.258-2.376 2.21-3.25a10.15 10.15 0 015.263-2.584c1.353-.263 2.741-.263 4.094 0a10.15 10.15 0 015.263 2.584c.952.874 1.715 1.997 2.21 3.25a10.15 10.15 0 01.353 6.526 10.15 10.15 0 01-2.46 3.526c-.953.867-2.181 1.48-3.535 1.743a10.086 10.086 0 01-1.832.167H8.832zM12 5a7.125 7.125 0 00-2.875.594 7.125 7.125 0 00-2.344 1.625 7.125 7.125 0 00-1.625 2.344 7.125 7.125 0 00-.594 2.875 7.125 7.125 0 00.594 2.875 7.125 7.125 0 001.625 2.344 7.125 7.125 0 002.344 1.625A7.125 7.125 0 0012 20a7.125 7.125 0 002.875-.594 7.125 7.125 0 002.344-1.625 7.125 7.125 0 001.625-2.344 7.125 7.125 0 00.594-2.875 7.125 7.125 0 00-.594-2.875 7.125 7.125 0 00-1.625-2.344 7.125 7.125 0 00-2.344-1.625A7.125 7.125 0 0012 5zM11 8h2v3h3v2h-3v3h-2v-3H8v-2h3V8z"/></svg>
+                </button>
 
-                <!-- Auth Buttons for Guests -->
-                <template x-if="!isLoggedIn">
-                    <div class="w-full space-y-3 mt-4 mb-4">
-                        <a href="/login" class="flex items-center justify-center bg-transparent border border-zinc-700 hover:bg-zinc-900 text-white font-bold py-3 px-4 rounded-full transition-all duration-200 w-full text-center">
-                            <span class="hidden xl:inline">Log in</span>
-                            <svg class="w-6 h-6 xl:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
-                        </a>
-                        <a href="/register" class="flex items-center justify-center bg-white hover:bg-zinc-200 text-black font-bold py-3 px-4 rounded-full transition-all duration-200 w-full text-center">
-                            <span class="hidden xl:inline">Register</span>
-                            <svg class="w-6 h-6 xl:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
-                        </a>
-                    </div>
-                </template>
-
-                <!-- Current User Pop -->
-                <div x-show="isLoggedIn" class="mt-auto p-3 hover:bg-zinc-900 rounded-full transition flex items-center xl:space-x-3 w-fit xl:w-full cursor-pointer group">
+                <!-- Current User Pop with Logout -->
+                <div class="mt-auto p-3 hover:bg-zinc-900 rounded-full transition flex items-center xl:space-x-3 w-fit xl:w-full cursor-pointer group relative" x-data="{ open: false }" @click="open = !open">
                     <img :src="user.avatar" class="w-10 h-10 rounded-full" :alt="user.name">
                     <div class="hidden xl:block flex-1 min-w-0">
                         <p class="font-bold text-sm truncate" x-text="user.name"></p>
                         <p class="text-zinc-500 text-sm truncate" x-text="user.handle"></p>
                     </div>
-                    <div class="hidden xl:block ml-auto text-zinc-500 group-hover:text-zinc-100">
+                    <div class="hidden xl:block ml-auto text-zinc-500">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M3 12c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zm9 2c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm7 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
+                    </div>
+                    
+                    <!-- Logout Dropdown -->
+                    <div x-show="open" x-transition @click.away="open = false" class="absolute bottom-full left-0 w-full mb-2 bg-black border border-zinc-800 rounded-xl shadow-[0_0_15px_rgba(255,255,255,0.1)] overflow-hidden z-50">
+                        <button @click="logout()" class="w-full text-left p-4 hover:bg-zinc-900 transition font-bold text-sm">
+                            Log out <span x-text="user.handle"></span>
+                        </button>
                     </div>
                 </div>
             </aside>
@@ -212,6 +218,55 @@ export default function Welcome(props) {
                     <a href="#" class="block p-4 text-[#1d9bf0] hover:bg-zinc-800 transition text-sm">Show more</a>
                 </div>
             </aside>
+        </div>
+
+        <!-- Compose Modal -->
+        <div x-show="showComposeModal" 
+             class="fixed inset-0 z-[100] flex items-start justify-center pt-[5%] bg-[#5b7083]/40 backdrop-blur-[1px]"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0">
+            
+            <div @click.away="showComposeModal = false" 
+                 class="bg-black w-full max-w-[600px] rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 mx-4">
+                
+                <div class="p-4 flex items-center justify-between border-b border-zinc-800">
+                    <button @click="showComposeModal = false" class="p-2 hover:bg-zinc-900 rounded-full transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
+                <div class="p-4 flex space-x-3">
+                    <img :src="user.avatar" class="w-10 h-10 rounded-full shrink-0" alt="">
+                    <div class="flex-1">
+                        <textarea 
+                            x-model="modalTweetContent"
+                            class="bg-transparent border-none focus:ring-0 w-full text-xl resize-none placeholder-zinc-500 min-h-[120px]" 
+                            placeholder="What's happening?"
+                            autofocus
+                        ></textarea>
+                        
+                        <div class="mt-4 pt-3 border-t border-zinc-800 flex justify-between items-center">
+                            <div class="flex space-x-3 text-[#1d9bf0]">
+                                <div class="p-2 hover:bg-blue-500/10 rounded-full cursor-pointer transition">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12.75a1.5 1.5 0 001.5 1.5zm10.5-112.5h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+                                </div>
+                            </div>
+                            <button 
+                                @click="postTweet(modalTweetContent)"
+                                :disabled="!modalTweetContent.trim() || isLoading"
+                                class="bg-[#1d9bf0] disabled:opacity-50 text-white px-5 py-2 rounded-full font-bold hover:bg-[#1a8cd8] transition flex items-center space-x-2"
+                            >
+                                <span x-show="isLoading" class="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
+                                <span x-text="isLoading ? 'Posting...' : 'Post'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     `;

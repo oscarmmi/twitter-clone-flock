@@ -8,6 +8,29 @@ use Illuminate\Support\Facades\Auth;
 
 class TweetController extends Controller
 {
+    public function welcome(Request $request)
+    {
+        $tweets = Tweet::whereNull('parent_id') // only original tweets, no replies
+            ->with(['user', 'likes', 'retweets', 'replies'])
+            ->latest()
+            ->get()
+            ->map(fn($tweet) => [
+                'id' => $tweet->id,
+                'user' => $tweet->user->name,
+                'handle' => '@' . strtolower(str_replace(' ', '', $tweet->user->name)),
+                'time' => $tweet->created_at->diffForHumans(short: true),
+                'content' => $tweet->body,
+                'likes' => $tweet->likes->count(),
+                'retweets' => $tweet->retweets->count(),
+                'replies' => $tweet->replies->count(),
+                'avatar' => $tweet->user->avatar ?? "https://i.pravatar.cc/150?u=" . $tweet->user_id,
+            ]);
+
+        return inertia('Welcome', [
+            'tweets' => $tweets
+        ]);
+    }
+
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -20,9 +43,22 @@ class TweetController extends Controller
             ->whereNull('parent_id') // main tweets on timeline
             ->with(['user', 'likes', 'retweets', 'replies'])
             ->latest()
-            ->get();
+            ->get()
+            ->map(fn($tweet) => [
+                'id' => $tweet->id,
+                'user' => $tweet->user->name,
+                'handle' => '@' . strtolower(str_replace(' ', '', $tweet->user->name)),
+                'time' => $tweet->created_at->diffForHumans(short: true),
+                'content' => $tweet->body,
+                'likes' => $tweet->likes->count(),
+                'retweets' => $tweet->retweets->count(),
+                'replies' => $tweet->replies->count(),
+                'avatar' => $tweet->user->avatar ?? "https://i.pravatar.cc/150?u=" . $tweet->user_id,
+            ]);
 
-        return view('dashboard', compact('tweets'));
+        return inertia('Dashboard', [
+            'tweets' => $tweets
+        ]);
     }
 
     public function store(Request $request)

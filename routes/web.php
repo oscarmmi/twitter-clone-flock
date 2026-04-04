@@ -8,9 +8,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\FollowController;
 
-Route::get('/', function () {
-    return inertia('Welcome');
-});
+Route::get('/', [TweetController::class, 'welcome'])->name('welcome');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [TweetController::class, 'index'])->name('dashboard');

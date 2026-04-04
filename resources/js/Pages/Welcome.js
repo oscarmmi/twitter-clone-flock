@@ -192,7 +192,6 @@ export default function Welcome(props) {
                         </template>
                         <div x-show="trends.length === 0" class="px-4 py-6 text-center text-zinc-500 text-sm">No trends yet</div>
                     </div>
-                    <a href="#" class="block p-4 text-[#1d9bf0] hover:bg-zinc-800 transition text-sm">Show more</a>
                 </div>
             </aside>
         </div>

@@ -5,48 +5,36 @@
                 <!-- Sidebar (Left) -->
                 <div class="md:col-span-1">
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
-                        <h3 class="font-bold text-xl mb-4">@ {{ Auth::user()->name }}</h3>
-                        <div class="flex justify-between text-sm text-gray-600">
+                        <div class="flex flex-col items-center mb-6">
+                            <div class="h-20 w-20 rounded-full bg-blue-500 mb-4 flex items-center justify-center text-white text-3xl font-bold">
+                                {{ strtoupper(substr($user->name, 0, 1)) }}
+                            </div>
+                            <h2 class="font-bold text-2xl text-center">{{ $user->name }}</h2>
+                            <span class="text-gray-500">@ {{ strtolower($user->name) }}</span>
+                        </div>
+                        <div class="flex justify-around mb-6 text-center border-y py-4 border-gray-100">
                             <div>
-                                <span class="font-bold text-black">{{ Auth::user()->following()->count() }}</span> Following
+                                <span class="font-bold block text-xl">{{ $user->following()->count() }}</span> Following
                             </div>
                             <div>
-                                <span class="font-bold text-black">{{ Auth::user()->followers()->count() }}</span> Followers
+                                <span class="font-bold block text-xl">{{ $user->followers()->count() }}</span> Followers
                             </div>
                         </div>
-                    </div>
 
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                        <h3 class="font-bold text-lg mb-4">Trending</h3>
-                        <ul class="space-y-2 text-blue-500">
-                            <li><a href="#" class="hover:underline">#Laravel</a></li>
-                            <li><a href="#" class="hover:underline">#PHP</a></li>
-                            <li><a href="#" class="hover:underline">#TwitterClone</a></li>
-                        </ul>
+                        @if(Auth::id() !== $user->id)
+                            <form action="{{ route('users.follow', $user) }}" method="POST">
+                                @csrf
+                                <x-primary-button class="w-full justify-center">
+                                    {{ Auth::user()->follows($user) ? 'Unfollow' : 'Follow' }}
+                                </x-primary-button>
+                            </form>
+                        @endif
                     </div>
                 </div>
 
                 <!-- Feed (Center) -->
                 <div class="md:col-span-2">
-                    <!-- New Tweet Form -->
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
-                        <form action="{{ route('tweets.store') }}" method="POST">
-                            @csrf
-                            <textarea 
-                                name="body" 
-                                class="w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm resize-none" 
-                                placeholder="What's happening?"
-                                rows="3"
-                                required
-                            ></textarea>
-                            <div class="flex justify-end mt-4">
-                                <x-primary-button>
-                                    Tweet
-                                </x-primary-button>
-                            </div>
-                        </form>
-                    </div>
-
+                    <h3 class="font-bold text-xl mb-6 ml-4">Tweets</h3>
                     <!-- Timeline -->
                     <div class="space-y-4">
                         @forelse($tweets as $tweet)
@@ -59,7 +47,7 @@
                                     </div>
                                     <div class="flex-1">
                                         <div class="flex items-center mb-1">
-                                            <a href="{{ route('user.show', $tweet->user) }}" class="font-bold hover:underline mr-2">{{ $tweet->user->name }}</a>
+                                            <span class="font-bold mr-2">{{ $tweet->user->name }}</span>
                                             <span class="text-gray-500 text-sm">· {{ $tweet->created_at->diffForHumans() }}</span>
                                         </div>
                                         
@@ -99,7 +87,9 @@
                                 </div>
                             </div>
                         @empty
-                            <p class="text-center text-gray-500">No tweets yet.</p>
+                            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                                <p class="text-center text-gray-500">No tweets yet from this user.</p>
+                            </div>
                         @endforelse
                     </div>
                 </div>
@@ -111,24 +101,6 @@
                         <form action="{{ route('search') }}" method="GET" class="mb-6">
                             <input type="text" name="q" placeholder="Search tweets..." class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2">
                         </form>
-
-                        <h3 class="font-bold text-lg mb-4">Who to follow</h3>
-                        <div class="space-y-4">
-                            @php
-                                $suggestedUsers = \App\Models\User::where('id', '!=', Auth::id())->limit(3)->get();
-                            @endphp
-                            @foreach($suggestedUsers as $suggestedUser)
-                                <div class="flex items-center justify-between">
-                                    <a href="{{ route('user.show', $suggestedUser) }}" class="font-medium hover:underline">{{ $suggestedUser->name }}</a>
-                                    <form action="{{ route('users.follow', $suggestedUser) }}" method="POST">
-                                        @csrf
-                                        <button type="submit" class="text-xs bg-black text-white px-3 py-1 rounded-full font-bold">
-                                            {{ Auth::user()->follows($suggestedUser) ? 'Unfollow' : 'Follow' }}
-                                        </button>
-                                    </form>
-                                </div>
-                            @endforeach
-                        </div>
                     </div>
                 </div>
             </div>

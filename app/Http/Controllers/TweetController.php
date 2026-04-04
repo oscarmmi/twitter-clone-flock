@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Tweet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class TweetController extends Controller
 {
@@ -55,7 +56,8 @@ class TweetController extends Controller
             ->values();
 
         return inertia('Welcome', [
-            'tweets' => $tweets
+            'tweets' => $tweets,
+            'trends' => $this->getTrends(),
         ]);
     }
 
@@ -109,8 +111,37 @@ class TweetController extends Controller
             ->values();
 
         return inertia('Dashboard', [
-            'tweets' => $tweets
+            'tweets' => $tweets,
+            'trends' => $this->getTrends(),
         ]);
+    }
+
+    private function getTrends(): array
+    {
+        $results = DB::select("
+            SELECT
+                lower(match[1]) AS tag,
+                COUNT(*)::int   AS total
+            FROM tweets,
+                 regexp_matches(body, '#([A-Za-z0-9_]+)', 'g') AS match
+            WHERE body IS NOT NULL
+            GROUP BY lower(match[1])
+            ORDER BY total DESC
+            LIMIT 10
+        ");
+
+        return array_map(function ($row) {
+            $count = $row->total;
+            $label = $count >= 1000
+                ? number_format($count / 1000, 1) . 'K posts'
+                : $count . ' posts';
+
+            return [
+                'tag'   => '#' . $row->tag,
+                'count' => $count,
+                'label' => $label,
+            ];
+        }, $results);
     }
 
     public function store(Request $request)

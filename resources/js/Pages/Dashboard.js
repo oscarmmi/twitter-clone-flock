@@ -14,6 +14,7 @@ export default function Dashboard(props) {
 
     // Safely stringify the tweets array and escape double quotes for the HTML attribute
     const tweetsData = JSON.stringify(tweets || []).replace(/"/g, '&quot;');
+    const trendsData = JSON.stringify(props.trends || []).replace(/"/g, '&quot;');
 
     // Expose auth state globally for the centralized TweetCard like button
     window._isLoggedIn = !!user;
@@ -31,6 +32,7 @@ export default function Dashboard(props) {
         user: ${userData},
         isLoggedIn: ${!!user},
         tweets: ${tweetsData},
+        trends: ${trendsData},
         postTweet(content = null) {
             const body = content !== null ? content : this.tweetContent;
             
@@ -184,15 +186,17 @@ export default function Dashboard(props) {
                 <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
                     <h2 class="text-xl font-bold p-4">Trends for you</h2>
                     <div class="divide-y divide-zinc-800">
-                        <template x-for="i in 5">
-                            <div class="px-4 py-3 hover:bg-zinc-800 transition cursor-pointer flex justify-between">
+                        <template x-for="(trend, index) in trends" :key="index">
+                            <div class="px-4 py-3 hover:bg-zinc-800 transition cursor-pointer flex justify-between items-start">
                                 <div>
                                     <p class="text-zinc-500 text-xs">Trending in Technology</p>
-                                    <p class="font-bold">#Laravel</p>
-                                    <p class="text-zinc-500 text-xs">20.5K posts</p>
+                                    <p class="font-bold" x-text="trend.tag"></p>
+                                    <p class="text-zinc-500 text-xs" x-text="trend.label"></p>
                                 </div>
+                                <span class="text-zinc-600 text-xs mt-1" x-text="'#' + (index + 1)"></span>
                             </div>
                         </template>
+                        <div x-show="trends.length === 0" class="px-4 py-6 text-center text-zinc-500 text-sm">No trends yet</div>
                     </div>
                     <a href="#" class="block p-4 text-[#1d9bf0] hover:bg-zinc-800 transition text-sm">Show more</a>
                 </div>

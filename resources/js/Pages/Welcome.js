@@ -1,16 +1,31 @@
 export default function Welcome(props) {
+    const user = props.auth.user;
+    
+    // Safely stringify the user object and escape double quotes for the HTML attribute
+    const userData = JSON.stringify({
+        name: user?.name || 'Guest',
+        handle: user?.handle || (user ? '@' + user.name.toLowerCase().replace(/\s+/g, '') : '@guest'),
+        avatar: user?.avatar || `https://i.pravatar.cc/150?u=${user?.id || 'guest'}`,
+        id: user?.id || null
+    }).replace(/"/g, '&quot;');
+
     return `
     <div x-data="{
         activeTab: 'for-you',
         tweetContent: '',
         isLoading: false,
-        user: { name: 'Oscar', handle: '@oscar', avatar: 'https://i.pravatar.cc/150?u=oscar' },
+        user: ${userData},
+        isLoggedIn: ${!!user},
         tweets: [
             { id: 1, user: 'John Doe', handle: '@johndoe', time: '2h', content: 'Building something cool with Laravel and Inertia! 🚀 @laravelframework #laravel', likes: 12, retweets: 5, replies: 2, avatar: 'https://i.pravatar.cc/150?u=1' },
             { id: 2, user: 'Jane Smith', handle: '@janesmith', time: '4h', content: 'Twitter clone is looking good. Alpine.js is amazing for this! ✨ #alpinejs #tailwindcss', likes: 45, retweets: 12, replies: 8, avatar: 'https://i.pravatar.cc/150?u=2' },
             { id: 3, user: 'Taylor Otwell', handle: '@taylorotwell', time: '1d', content: 'Laravel 12 is out now! Check out the documentation at laravel.com/docs', likes: 1200, retweets: 300, replies: 150, avatar: 'https://i.pravatar.cc/150?u=3' }
         ],
         postTweet() {
+            if (!this.isLoggedIn) {
+                window.location.href = '/login';
+                return;
+            }
             if (this.tweetContent.trim()) {
                 this.isLoading = true;
                 setTimeout(() => {
@@ -42,7 +57,7 @@ export default function Welcome(props) {
                 </div>
                 
                 <nav class="flex-1 space-y-1 w-full text-zinc-100">
-                    <a href="#" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 group w-fit font-bold">
+                    <a href="/" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 group w-fit font-bold">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                         <span class="text-xl hidden xl:inline pr-4">Home</span>
                     </a>
@@ -56,16 +71,35 @@ export default function Welcome(props) {
                     </a>
                 </nav>
 
-                <button class="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-bold py-3 xl:w-full rounded-full flex items-center justify-center transition-all duration-200 mt-4 mb-4">
-                    <span class="hidden xl:inline">Post</span>
-                </button>
+                <template x-if="isLoggedIn">
+                    <button class="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-bold py-3 xl:w-full rounded-full flex items-center justify-center transition-all duration-200 mt-4 mb-4">
+                        <span class="hidden xl:inline">Post</span>
+                    </button>
+                </template>
+
+                <!-- Auth Buttons for Guests -->
+                <template x-if="!isLoggedIn">
+                    <div class="w-full space-y-3 mt-4 mb-4">
+                        <a href="/login" class="flex items-center justify-center bg-transparent border border-zinc-700 hover:bg-zinc-900 text-white font-bold py-3 px-4 rounded-full transition-all duration-200 w-full text-center">
+                            <span class="hidden xl:inline">Log in</span>
+                            <svg class="w-6 h-6 xl:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                        </a>
+                        <a href="/register" class="flex items-center justify-center bg-white hover:bg-zinc-200 text-black font-bold py-3 px-4 rounded-full transition-all duration-200 w-full text-center">
+                            <span class="hidden xl:inline">Register</span>
+                            <svg class="w-6 h-6 xl:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                        </a>
+                    </div>
+                </template>
 
                 <!-- Current User Pop -->
-                <div class="mt-auto p-3 hover:bg-zinc-900 rounded-full transition flex items-center xl:space-x-3 w-fit xl:w-full cursor-pointer group">
+                <div x-show="isLoggedIn" class="mt-auto p-3 hover:bg-zinc-900 rounded-full transition flex items-center xl:space-x-3 w-fit xl:w-full cursor-pointer group">
                     <img :src="user.avatar" class="w-10 h-10 rounded-full" :alt="user.name">
                     <div class="hidden xl:block flex-1 min-w-0">
                         <p class="font-bold text-sm truncate" x-text="user.name"></p>
                         <p class="text-zinc-500 text-sm truncate" x-text="user.handle"></p>
+                    </div>
+                    <div class="hidden xl:block ml-auto text-zinc-500 group-hover:text-zinc-100">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M3 12c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zm9 2c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm7 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
                     </div>
                 </div>
             </aside>
@@ -102,7 +136,7 @@ export default function Welcome(props) {
                         <div class="mt-4 pt-3 border-t border-zinc-800 flex justify-between items-center">
                             <div class="flex space-x-3 text-[#1d9bf0]">
                                 <div class="p-2 hover:bg-blue-500/10 rounded-full cursor-pointer transition">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12.75a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12.75a1.5 1.5 0 001.5 1.5zm10.5-112.5h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
                                 </div>
                             </div>
                             <button 
@@ -201,6 +235,5 @@ export default function Welcome(props) {
             </aside>
         </div>
     </div>
-/div>
     `;
 }

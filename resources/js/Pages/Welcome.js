@@ -157,7 +157,7 @@ export default function Welcome(props) {
                 <!-- Search -->
                 <div class="sticky top-0 bg-black pt-1 pb-4 z-40">
                     <div class="flex items-center space-x-4 bg-zinc-900 p-3 rounded-full border border-transparent focus-within:border-[#1d9bf0] focus-within:bg-black transition group">
-                        <svg class="w-5 h-5 text-zinc-500 group-focus-within:text-[#1d9bf0]" fill="currentColor" viewBox="0 0 24 24"><path d="M21.172 19.414l-4.143-4.142A7 7 0 1010 17a7 7 0 105.272-2.372l4.142 4.142c.488.488 1.28.488 1.768 0 .488-.488.488-1.28 0-1.768zM10 15a5 5 0 110-10 5 5 0 010 10z"/></svg>
+                        <svg class="w-5 h-5 text-zinc-500 group-focus-within:text-[#1d9bf0]" fill="currentColor" viewBox="0 0 24 24"><path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/></svg>
                         <input type="text" placeholder="Search" class="bg-transparent border-none focus:ring-0 w-full placeholder-zinc-500">
                     </div>
                 </div>

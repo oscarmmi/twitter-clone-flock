@@ -27,6 +27,7 @@ class TweetController extends Controller
                 'replies' => $tweet->replies->count(),
                 'avatar' => $tweet->user->avatar ?? "https://i.pravatar.cc/150?u=" . $tweet->user_id,
                 'liked_by_user' => $authUser ? $tweet->likes->contains('id', $authUser->id) : false,
+                'retweeted_by_user' => $authUser ? $tweet->retweets->contains('user_id', $authUser->id) : false,
             ]);
 
         return inertia('Welcome', [
@@ -58,6 +59,7 @@ class TweetController extends Controller
                 'replies' => $tweet->replies->count(),
                 'avatar' => $tweet->user->avatar ?? "https://i.pravatar.cc/150?u=" . $tweet->user_id,
                 'liked_by_user' => $tweet->likes->contains('id', $user->id),
+                'retweeted_by_user' => $tweet->retweets->contains('user_id', $user->id),
             ]);
 
         return inertia('Dashboard', [
@@ -94,18 +96,23 @@ class TweetController extends Controller
 
     public function retweet(Request $request, Tweet $tweet)
     {
-        // If already retweeted, un-retweet? (Optional, but let's just create or delete)
-        $existing = Auth::user()->tweets()->where('retweet_id', $tweet->id)->first();
-        
+        $user = Auth::user();
+        $existing = $user->tweets()->where('retweet_id', $tweet->id)->first();
+
         if ($existing) {
             $existing->delete();
+            $retweeted = false;
         } else {
-            Auth::user()->tweets()->create([
+            $user->tweets()->create([
                 'retweet_id' => $tweet->id,
             ]);
+            $retweeted = true;
         }
 
-        return back();
+        return response()->json([
+            'retweeted' => $retweeted,
+            'retweets_count' => $tweet->retweets()->count(),
+        ]);
     }
 
     public function search(Request $request)

@@ -47,10 +47,70 @@ export function TweetCard() {
                         <div class="p-2 group-hover/btn:bg-blue-500/10 rounded-full">${Icons.reply}</div>
                         <span x-text="tweet.replies_count ?? tweet.replies ?? 0" class="text-xs"></span>
                     </button>
-                    <button class="flex items-center space-x-2 hover:text-green-400 transition group/btn">
-                        <div class="p-2 group-hover/btn:bg-green-500/10 rounded-full">${Icons.retweet}</div>
-                        <span x-text="tweet.retweets_count ?? tweet.retweets ?? 0" class="text-xs"></span>
-                    </button>
+                    <!-- Retweet button with dropdown -->
+                    <div class="relative" x-data="{
+                        retweeted: tweet.retweeted_by_user ?? false,
+                        count: tweet.retweets_count ?? tweet.retweets ?? 0,
+                        loading: false,
+                        open: false,
+                        toggle() {
+                            if (this.loading) return;
+                            if (!window._isLoggedIn) { window.location.href = '/login'; return; }
+
+                            this.open = false;
+                            this.retweeted = !this.retweeted;
+                            this.count += this.retweeted ? 1 : -1;
+                            this.loading = true;
+
+                            axios.post('/tweets/' + tweet.id + '/retweet')
+                                .then(res => {
+                                    this.retweeted = res.data.retweeted;
+                                    this.count = res.data.retweets_count;
+                                })
+                                .catch(() => {
+                                    this.retweeted = !this.retweeted;
+                                    this.count += this.retweeted ? 1 : -1;
+                                })
+                                .finally(() => { this.loading = false; });
+                        }
+                    }">
+                        <button
+                            @click.stop="open = !open"
+                            :class="retweeted ? 'text-green-400' : 'text-zinc-500 hover:text-green-400'"
+                            class="flex items-center space-x-2 transition group/btn"
+                        >
+                            <div :class="retweeted ? 'bg-green-500/10' : 'group-hover/btn:bg-green-500/10'" class="p-2 rounded-full transition">
+                                <svg class="w-[18px] h-[18px]" :class="{ 'animate-spin-once': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"/>
+                                </svg>
+                            </div>
+                            <span x-text="count" class="text-xs"></span>
+                        </button>
+
+                        <!-- Retweet Dropdown -->
+                        <div
+                            x-show="open"
+                            @click.away="open = false"
+                            x-transition:enter="transition ease-out duration-150"
+                            x-transition:enter-start="opacity-0 scale-95"
+                            x-transition:enter-end="opacity-100 scale-100"
+                            x-transition:leave="transition ease-in duration-100"
+                            x-transition:leave-start="opacity-100 scale-100"
+                            x-transition:leave-end="opacity-0 scale-95"
+                            class="absolute bottom-full left-0 mb-2 w-44 bg-black border border-zinc-800 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.5)] overflow-hidden z-50"
+                        >
+                            <button
+                                @click.stop="toggle()"
+                                class="flex items-center space-x-3 w-full px-4 py-3 hover:bg-zinc-900 transition font-bold text-sm"
+                                :class="retweeted ? 'text-green-400' : 'text-zinc-100'"
+                            >
+                                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"/>
+                                </svg>
+                                <span x-text="retweeted ? 'Undo Repost' : 'Repost'"></span>
+                            </button>
+                        </div>
+                    </div>
                     <!-- Like button with optimistic UI -->
                     <div x-data="{
                         liked: tweet.liked_by_user ?? false,

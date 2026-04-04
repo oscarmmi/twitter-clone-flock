@@ -110,7 +110,7 @@ class TweetController extends Controller
             ->filter()
             ->values();
 
-        return inertia('Dashboard', [
+        return inertia('Welcome', [
             'tweets' => $tweets,
             'trends' => $this->getTrends(),
         ]);

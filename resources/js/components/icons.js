@@ -30,23 +30,53 @@ export const Icons = {
 export function TweetCard() {
     return `
     <template x-for="tweet in tweets" :key="tweet.id">
-        <div class="p-4 hover:bg-white/[0.03] transition cursor-pointer flex space-x-3 group border-b border-zinc-800">
-            <img :src="tweet.avatar || 'https://i.pravatar.cc/150?u=' + tweet.user_id" class="w-10 h-10 rounded-full shrink-0 object-cover" alt="">
-            <div class="flex-1 min-w-0">
-                <div class="flex items-center space-x-1 flex-wrap">
-                    <span class="font-bold hover:underline truncate max-w-[120px]" x-text="tweet.user?.name || tweet.user"></span>
-                    <span class="text-zinc-500 text-sm truncate" x-text="tweet.handle || ('@' + (tweet.user?.name || '').toLowerCase().replace(/\\s+/g,''))"></span>
-                    <span class="text-zinc-500 text-sm">·</span>
-                    <span class="text-zinc-500 text-sm" x-text="tweet.time || tweet.created_at_human || 'now'"></span>
+        <div
+            x-data="{
+                expanded: false,
+                replies: tweet.replies_list || [],
+                toggle() { this.expanded = !this.expanded; }
+            }"
+            @new-reply.window="if ($event.detail.tweetId === tweet.id) { replies.push($event.detail.reply); expanded = true; }"
+            class="border-b border-zinc-800"
+        >
+            <!-- Main Tweet Row — click navigates to tweet detail page -->
+            <div @click="window.location.href = '/tweets/' + tweet.id" class="p-4 hover:bg-white/[0.03] transition cursor-pointer flex space-x-3 group">
+                <div class="flex flex-col items-center shrink-0">
+                    <img :src="tweet.avatar || 'https://i.pravatar.cc/150?u=' + tweet.user_id" class="w-10 h-10 rounded-full object-cover" alt="">
+                    <div x-show="expanded && replies.length > 0" class="w-0.5 bg-zinc-700 flex-1 mt-2 min-h-[16px]"></div>
                 </div>
-                <p class="mt-1 text-zinc-100 whitespace-pre-wrap break-words" x-text="tweet.body || tweet.content"></p>
-                
-                <!-- Action Buttons -->
-                <div class="flex justify-between mt-3 text-zinc-500 max-w-[350px]">
-                    <button class="flex items-center space-x-2 hover:text-blue-400 transition group/btn">
-                        <div class="p-2 group-hover/btn:bg-blue-500/10 rounded-full">${Icons.reply}</div>
-                        <span x-text="tweet.replies_count ?? tweet.replies ?? 0" class="text-xs"></span>
-                    </button>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center space-x-1 flex-wrap">
+                        <span class="font-bold hover:underline truncate max-w-[120px]" x-text="tweet.user?.name || tweet.user"></span>
+                        <span class="text-zinc-500 text-sm truncate" x-text="tweet.handle || ('@' + (tweet.user?.name || '').toLowerCase().replace(/\\s+/g,''))"></span>
+                        <span class="text-zinc-500 text-sm">·</span>
+                        <span class="text-zinc-500 text-sm" x-text="tweet.time || tweet.created_at_human || 'now'"></span>
+                    </div>
+                    <p class="mt-1 text-zinc-100 whitespace-pre-wrap break-words" x-text="tweet.body || tweet.content"></p>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex justify-between mt-3 text-zinc-500 max-w-[350px]">
+                        <!-- Reply button -->
+                        <div x-data="{ count: tweet.replies_count ?? tweet.replies ?? 0 }">
+                            <button
+                                @click.stop="
+                                    if (!window._isLoggedIn) { window.location.href = '/login'; return; }
+                                    window.dispatchEvent(new CustomEvent('open-reply-modal', {
+                                        detail: {
+                                            tweet,
+                                            onSuccess: (reply) => {
+                                                count++;
+                                                window.dispatchEvent(new CustomEvent('new-reply', { detail: { tweetId: tweet.id, reply: reply || { user: window._currentUserName || 'You', handle: '', avatar: window._currentUserAvatar, body: '', time: 'now' } } }));
+                                            }
+                                        }
+                                    }));
+                                "
+                                class="flex items-center space-x-2 text-zinc-500 hover:text-blue-400 transition group/btn"
+                            >
+                                <div class="p-2 group-hover/btn:bg-blue-500/10 rounded-full">${Icons.reply}</div>
+                                <span x-text="count" class="text-xs"></span>
+                            </button>
+                        </div>
                     <!-- Retweet button with dropdown -->
                     <div class="relative" x-data="{
                         retweeted: tweet.retweeted_by_user ?? false,
@@ -240,6 +270,144 @@ export function TweetCard() {
                     </div>
                 </div>
             </div>
+
+            <!-- Expanded Replies Section -->
+            <div x-show="expanded && replies.length > 0" x-transition class="pb-2">
+                <template x-for="reply in replies" :key="reply.id">
+                    <div class="flex space-x-3 px-4 py-3 hover:bg-white/[0.02] transition">
+                        <div class="flex flex-col items-center shrink-0">
+                            <img :src="reply.avatar || 'https://i.pravatar.cc/150?u=' + reply.id" class="w-8 h-8 rounded-full object-cover" alt="">
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center space-x-1 flex-wrap">
+                                <span class="font-bold text-sm hover:underline" x-text="reply.user"></span>
+                                <span class="text-zinc-500 text-xs" x-text="reply.handle"></span>
+                                <span class="text-zinc-500 text-xs">·</span>
+                                <span class="text-zinc-500 text-xs" x-text="reply.time || 'now'"></span>
+                            </div>
+                            <p class="mt-0.5 text-zinc-200 text-sm whitespace-pre-wrap break-words" x-text="reply.body"></p>
+                        </div>
+                    </div>
+                </template>
+                <!-- Show count if there are more replies -->
+                <button
+                    x-show="tweet.replies > replies.length"
+                    class="ml-4 mb-2 text-[#1d9bf0] text-sm hover:underline font-medium"
+                    x-text="'Show ' + (tweet.replies - replies.length) + ' more repl' + (tweet.replies - replies.length === 1 ? 'y' : 'ies')"
+                ></button>
+            </div>
         </div>
     </template>`;
+}
+
+// Global reply modal — import and call ReplyModal() once in Welcome.js and Dashboard.js
+export function ReplyModal() {
+    return `
+    <div
+        x-data="{
+            open: false,
+            tweet: null,
+            body: '',
+            loading: false,
+            onSuccess: null,
+            init() {
+                window.addEventListener('open-reply-modal', (e) => {
+                    this.tweet = e.detail.tweet;
+                    this.onSuccess = e.detail.onSuccess || null;
+                    this.body = '';
+                    this.open = true;
+                    this.$nextTick(() => this.$refs.replyInput && this.$refs.replyInput.focus());
+                });
+            },
+            submit() {
+                if (!this.body.trim() || this.loading) return;
+                this.loading = true;
+                axios.post('/tweets/' + this.tweet.id + '/reply', { body: this.body })
+                    .then(res => {
+                        if (this.onSuccess) this.onSuccess({
+                            id: res.data.reply_id || Date.now(),
+                            user: window._currentUserName || 'You',
+                            handle: window._currentUserHandle || '',
+                            avatar: window._currentUserAvatar || 'https://i.pravatar.cc/150?u=me',
+                            body: this.body,
+                            time: 'now',
+                        });
+                        this.open = false;
+                        this.body = '';
+                    })
+                    .catch(err => {
+                        const msg = err.response?.data?.errors?.body?.[0] || 'Something went wrong';
+                        alert(msg);
+                    })
+                    .finally(() => { this.loading = false; });
+            }
+        }"
+        x-show="open"
+        @keydown.escape.window="open = false"
+        style="display:none"
+        class="fixed inset-0 z-[200] flex items-start justify-center pt-[5%] bg-[#5b7083]/40 backdrop-blur-[1px]"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+    >
+        <div
+            @click.away="open = false"
+            class="bg-black w-full max-w-[600px] rounded-2xl border border-zinc-800 shadow-2xl overflow-hidden mx-4"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 -translate-y-4"
+            x-transition:enter-end="opacity-100 translate-y-0"
+        >
+            <!-- Modal Header -->
+            <div class="flex items-center p-3 border-b border-zinc-800">
+                <button @click="open = false" class="p-2 hover:bg-zinc-900 rounded-full transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Original Tweet Preview -->
+            <div class="px-4 pt-4 pb-2 flex space-x-3" x-show="tweet">
+                <div class="flex flex-col items-center shrink-0">
+                    <img :src="tweet?.avatar || 'https://i.pravatar.cc/150?u=' + tweet?.id" class="w-10 h-10 rounded-full object-cover" alt="">
+                    <div class="w-0.5 bg-zinc-700 flex-1 mt-2 min-h-[24px]"></div>
+                </div>
+                <div class="flex-1 min-w-0 pb-3">
+                    <div class="flex items-center space-x-1">
+                        <span class="font-bold text-sm" x-text="tweet?.user?.name || tweet?.user"></span>
+                        <span class="text-zinc-500 text-sm" x-text="tweet?.handle || ('@' + (tweet?.user?.name || '').toLowerCase().replace(/\\s+/g,''))"></span>
+                    </div>
+                    <p class="mt-1 text-zinc-200 text-sm whitespace-pre-wrap break-words" x-text="tweet?.body || tweet?.content"></p>
+                    <p class="mt-2 text-zinc-500 text-sm">Replying to <span class="text-[#1d9bf0]" x-text="tweet?.handle || ('@' + (tweet?.user?.name || '').toLowerCase().replace(/\\s+/g,''))"></span></p>
+                </div>
+            </div>
+
+            <!-- Reply Compose Area -->
+            <div class="px-4 pb-4 flex space-x-3">
+                <img :src="window._currentUserAvatar || 'https://i.pravatar.cc/150?u=me'" class="w-10 h-10 rounded-full shrink-0 object-cover" alt="">
+                <div class="flex-1">
+                    <textarea
+                        x-ref="replyInput"
+                        x-model="body"
+                        @keydown.meta.enter="submit()"
+                        @keydown.ctrl.enter="submit()"
+                        class="bg-transparent border-none focus:ring-0 w-full text-xl resize-none placeholder-zinc-500 min-h-[80px]"
+                        placeholder="Post your reply"
+                    ></textarea>
+                    <div class="flex justify-between items-center pt-3 border-t border-zinc-800">
+                        <span class="text-sm" :class="body.length > 260 ? 'text-red-400' : 'text-zinc-500'" x-text="body.length + '/280'"></span>
+                        <button
+                            @click="submit()"
+                            :disabled="!body.trim() || loading || body.length > 280"
+                            class="bg-[#1d9bf0] disabled:opacity-50 text-white px-5 py-2 rounded-full font-bold hover:bg-[#1a8cd8] transition flex items-center space-x-2"
+                        >
+                            <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
+                            <span x-text="loading ? 'Replying...' : 'Reply'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>`;
 }

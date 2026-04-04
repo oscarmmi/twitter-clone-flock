@@ -1,4 +1,4 @@
-import { Icons, TweetCard } from '../components/icons.js';
+import { Icons, TweetCard, ReplyModal } from '../components/icons.js';
 
 export default function Welcome(props) {
     const user = props.auth.user;
@@ -17,6 +17,9 @@ export default function Welcome(props) {
 
     // Expose auth state globally for the centralized TweetCard like button
     window._isLoggedIn = !!user;
+    window._currentUserAvatar = user?.avatar || `https://i.pravatar.cc/150?u=${user?.id || 'me'}`;
+    window._currentUserName = user?.name || null;
+    window._currentUserHandle = user ? '@' + user.name.toLowerCase().replace(/\s+/g,'') : null;
 
     return `
     <div x-data="{
@@ -190,5 +193,6 @@ export default function Welcome(props) {
             </aside>
         </div>
     </div>
+    ${ReplyModal()}
     `;
 }

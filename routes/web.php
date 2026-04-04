@@ -9,6 +9,7 @@ use App\Http\Controllers\LikeController;
 use App\Http\Controllers\FollowController;
 
 Route::get('/', [TweetController::class, 'welcome'])->name('welcome');
+Route::get('/tweets/{tweet}', [TweetController::class, 'show'])->name('tweets.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [TweetController::class, 'index'])->name('dashboard');

@@ -13,7 +13,7 @@ class TweetController extends Controller
         $authUser = Auth::user();
 
         $tweets = Tweet::whereNull('parent_id') // only original tweets, no replies
-            ->with(['user', 'likes', 'retweets', 'replies'])
+            ->with(['user', 'likes', 'retweets', 'replies', 'replies.user'])
             ->latest()
             ->get()
             ->map(fn($tweet) => [
@@ -28,6 +28,14 @@ class TweetController extends Controller
                 'avatar' => $tweet->user->avatar ?? "https://i.pravatar.cc/150?u=" . $tweet->user_id,
                 'liked_by_user' => $authUser ? $tweet->likes->contains('id', $authUser->id) : false,
                 'retweeted_by_user' => $authUser ? $tweet->retweets->contains('user_id', $authUser->id) : false,
+                'replies_list' => $tweet->replies->map(fn($r) => [
+                    'id' => $r->id,
+                    'user' => $r->user->name,
+                    'handle' => '@' . strtolower(str_replace(' ', '', $r->user->name)),
+                    'avatar' => $r->user->avatar ?? "https://i.pravatar.cc/150?u=" . $r->user_id,
+                    'body' => $r->body,
+                    'time' => $r->created_at->diffForHumans(short: true),
+                ])->values()->all(),
             ]);
 
         return inertia('Welcome', [
@@ -45,7 +53,7 @@ class TweetController extends Controller
 
         $tweets = Tweet::whereIn('user_id', $followingIds)
             ->whereNull('parent_id') // main tweets on timeline
-            ->with(['user', 'likes', 'retweets', 'replies'])
+            ->with(['user', 'likes', 'retweets', 'replies', 'replies.user'])
             ->latest()
             ->get()
             ->map(fn($tweet) => [
@@ -60,6 +68,14 @@ class TweetController extends Controller
                 'avatar' => $tweet->user->avatar ?? "https://i.pravatar.cc/150?u=" . $tweet->user_id,
                 'liked_by_user' => $tweet->likes->contains('id', $user->id),
                 'retweeted_by_user' => $tweet->retweets->contains('user_id', $user->id),
+                'replies_list' => $tweet->replies->map(fn($r) => [
+                    'id' => $r->id,
+                    'user' => $r->user->name,
+                    'handle' => '@' . strtolower(str_replace(' ', '', $r->user->name)),
+                    'avatar' => $r->user->avatar ?? "https://i.pravatar.cc/150?u=" . $r->user_id,
+                    'body' => $r->body,
+                    'time' => $r->created_at->diffForHumans(short: true),
+                ])->values()->all(),
             ]);
 
         return inertia('Dashboard', [
@@ -80,18 +96,58 @@ class TweetController extends Controller
         return back();
     }
 
+    public function show(Request $request, Tweet $tweet)
+    {
+        $authUser = Auth::user();
+
+        $tweet->load(['user', 'likes', 'retweets', 'replies.user', 'replies.likes']);
+
+        $tweetData = [
+            'id' => $tweet->id,
+            'user' => $tweet->user->name,
+            'handle' => '@' . strtolower(str_replace(' ', '', $tweet->user->name)),
+            'time' => $tweet->created_at->diffForHumans(),
+            'created_at_full' => $tweet->created_at->format('g:i A · M j, Y'),
+            'content' => $tweet->body,
+            'likes' => $tweet->likes->count(),
+            'retweets' => $tweet->retweets->count(),
+            'replies' => $tweet->replies->count(),
+            'avatar' => $tweet->user->avatar ?? "https://i.pravatar.cc/150?u=" . $tweet->user_id,
+            'liked_by_user' => $authUser ? $tweet->likes->contains('id', $authUser->id) : false,
+            'retweeted_by_user' => $authUser ? $tweet->retweets->contains('user_id', $authUser->id) : false,
+            'replies_list' => $tweet->replies->map(fn($r) => [
+                'id' => $r->id,
+                'user' => $r->user->name,
+                'handle' => '@' . strtolower(str_replace(' ', '', $r->user->name)),
+                'avatar' => $r->user->avatar ?? "https://i.pravatar.cc/150?u=" . $r->user_id,
+                'body' => $r->body,
+                'time' => $r->created_at->diffForHumans(short: true),
+                'likes' => $r->likes->count(),
+                'liked_by_user' => $authUser ? $r->likes->contains('id', $authUser->id) : false,
+            ])->values()->all(),
+        ];
+
+        return inertia('TweetShow', [
+            'tweet' => $tweetData,
+        ]);
+    }
+
     public function reply(Request $request, Tweet $tweet)
     {
         $request->validate([
             'body' => 'required|max:280',
         ]);
 
-        Auth::user()->tweets()->create([
+        $reply = Auth::user()->tweets()->create([
             'body' => $request->body,
             'parent_id' => $tweet->id,
         ]);
 
-        return back();
+        return response()->json([
+            'success' => true,
+            'reply_id' => $reply->id,
+            'replies_count' => $tweet->replies()->count(),
+        ]);
     }
 
     public function retweet(Request $request, Tweet $tweet)

@@ -12,31 +12,47 @@ class TweetController extends Controller
     {
         $authUser = Auth::user();
 
-        $tweets = Tweet::whereNull('parent_id') // only original tweets, no replies
-            ->with(['user', 'likes', 'retweets', 'replies', 'replies.user'])
+        $tweets = Tweet::whereNull('parent_id')   // exclude replies
+            ->with([
+                'user', 'likes', 'retweets', 'replies', 'replies.user',
+                'retweet', 'retweet.user', 'retweet.likes',  // load original tweet when this is a retweet
+            ])
             ->latest()
             ->get()
-            ->map(fn($tweet) => [
-                'id' => $tweet->id,
-                'user' => $tweet->user->name,
-                'handle' => '@' . strtolower(str_replace(' ', '', $tweet->user->name)),
-                'time' => $tweet->created_at->diffForHumans(short: true),
-                'content' => $tweet->body,
-                'likes' => $tweet->likes->count(),
-                'retweets' => $tweet->retweets->count(),
-                'replies' => $tweet->replies->count(),
-                'avatar' => $tweet->user->avatar ?? "https://i.pravatar.cc/150?u=" . $tweet->user_id,
-                'liked_by_user' => $authUser ? $tweet->likes->contains('id', $authUser->id) : false,
-                'retweeted_by_user' => $authUser ? $tweet->retweets->contains('user_id', $authUser->id) : false,
-                'replies_list' => $tweet->replies->map(fn($r) => [
-                    'id' => $r->id,
-                    'user' => $r->user->name,
-                    'handle' => '@' . strtolower(str_replace(' ', '', $r->user->name)),
-                    'avatar' => $r->user->avatar ?? "https://i.pravatar.cc/150?u=" . $r->user_id,
-                    'body' => $r->body,
-                    'time' => $r->created_at->diffForHumans(short: true),
-                ])->values()->all(),
-            ]);
+            ->map(function ($tweet) use ($authUser) {
+                // If this is a retweet, show the original tweet's content
+                $source = $tweet->retweet_id ? $tweet->retweet : $tweet;
+
+                if (!$source || !$source->user) return null; // skip broken retweets
+
+                return [
+                    'id' => $source->id,
+                    'user' => $source->user->name,
+                    'handle' => '@' . strtolower(str_replace(' ', '', $source->user->name)),
+                    'time' => $source->created_at->diffForHumans(short: true),
+                    'content' => $source->body,
+                    'likes' => $source->likes->count(),
+                    'retweets' => $source->retweets->count(),
+                    'replies' => $source->replies()->count(),
+                    'avatar' => $source->user->avatar ?? "https://i.pravatar.cc/150?u=" . $source->user_id,
+                    'liked_by_user' => $authUser ? $source->likes->contains('id', $authUser->id) : false,
+                    'retweeted_by_user' => $authUser ? $source->retweets->contains('user_id', $authUser->id) : false,
+                    'replies_list' => $source->replies()->with('user')->latest()->get()->map(fn($r) => [
+                        'id' => $r->id,
+                        'user' => $r->user->name,
+                        'handle' => '@' . strtolower(str_replace(' ', '', $r->user->name)),
+                        'avatar' => $r->user->avatar ?? "https://i.pravatar.cc/150?u=" . $r->user_id,
+                        'body' => $r->body,
+                        'time' => $r->created_at->diffForHumans(short: true),
+                    ])->values()->all(),
+                    // Retweet banner info
+                    'is_retweet' => !!$tweet->retweet_id,
+                    'retweeted_by' => $tweet->retweet_id ? $tweet->user->name : null,
+                    'retweeted_by_handle' => $tweet->retweet_id ? ('@' . strtolower(str_replace(' ', '', $tweet->user->name))) : null,
+                ];
+            })
+            ->filter()
+            ->values();
 
         return inertia('Welcome', [
             'tweets' => $tweets
@@ -52,31 +68,45 @@ class TweetController extends Controller
         $followingIds->push($user->id);
 
         $tweets = Tweet::whereIn('user_id', $followingIds)
-            ->whereNull('parent_id') // main tweets on timeline
-            ->with(['user', 'likes', 'retweets', 'replies', 'replies.user'])
+            ->whereNull('parent_id')               // exclude replies
+            ->with([
+                'user', 'likes', 'retweets', 'replies', 'replies.user',
+                'retweet', 'retweet.user', 'retweet.likes',
+            ])
             ->latest()
             ->get()
-            ->map(fn($tweet) => [
-                'id' => $tweet->id,
-                'user' => $tweet->user->name,
-                'handle' => '@' . strtolower(str_replace(' ', '', $tweet->user->name)),
-                'time' => $tweet->created_at->diffForHumans(short: true),
-                'content' => $tweet->body,
-                'likes' => $tweet->likes->count(),
-                'retweets' => $tweet->retweets->count(),
-                'replies' => $tweet->replies->count(),
-                'avatar' => $tweet->user->avatar ?? "https://i.pravatar.cc/150?u=" . $tweet->user_id,
-                'liked_by_user' => $tweet->likes->contains('id', $user->id),
-                'retweeted_by_user' => $tweet->retweets->contains('user_id', $user->id),
-                'replies_list' => $tweet->replies->map(fn($r) => [
-                    'id' => $r->id,
-                    'user' => $r->user->name,
-                    'handle' => '@' . strtolower(str_replace(' ', '', $r->user->name)),
-                    'avatar' => $r->user->avatar ?? "https://i.pravatar.cc/150?u=" . $r->user_id,
-                    'body' => $r->body,
-                    'time' => $r->created_at->diffForHumans(short: true),
-                ])->values()->all(),
-            ]);
+            ->map(function ($tweet) use ($user) {
+                $source = $tweet->retweet_id ? $tweet->retweet : $tweet;
+
+                if (!$source || !$source->user) return null;
+
+                return [
+                    'id' => $source->id,
+                    'user' => $source->user->name,
+                    'handle' => '@' . strtolower(str_replace(' ', '', $source->user->name)),
+                    'time' => $source->created_at->diffForHumans(short: true),
+                    'content' => $source->body,
+                    'likes' => $source->likes->count(),
+                    'retweets' => $source->retweets->count(),
+                    'replies' => $source->replies()->count(),
+                    'avatar' => $source->user->avatar ?? "https://i.pravatar.cc/150?u=" . $source->user_id,
+                    'liked_by_user' => $source->likes->contains('id', $user->id),
+                    'retweeted_by_user' => $source->retweets->contains('user_id', $user->id),
+                    'replies_list' => $source->replies()->with('user')->latest()->get()->map(fn($r) => [
+                        'id' => $r->id,
+                        'user' => $r->user->name,
+                        'handle' => '@' . strtolower(str_replace(' ', '', $r->user->name)),
+                        'avatar' => $r->user->avatar ?? "https://i.pravatar.cc/150?u=" . $r->user_id,
+                        'body' => $r->body,
+                        'time' => $r->created_at->diffForHumans(short: true),
+                    ])->values()->all(),
+                    'is_retweet' => !!$tweet->retweet_id,
+                    'retweeted_by' => $tweet->retweet_id ? $tweet->user->name : null,
+                    'retweeted_by_handle' => $tweet->retweet_id ? ('@' . strtolower(str_replace(' ', '', $tweet->user->name))) : null,
+                ];
+            })
+            ->filter()
+            ->values();
 
         return inertia('Dashboard', [
             'tweets' => $tweets

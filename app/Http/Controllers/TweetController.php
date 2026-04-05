@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Notifications\TweetReplied;
 
 class TweetController extends Controller
 {
@@ -246,6 +247,11 @@ class TweetController extends Controller
             'body' => $request->body,
             'parent_id' => $tweet->id,
         ]);
+
+        // Notify the tweet owner if it's not the same user
+        if ($tweet->user_id !== Auth::id()) {
+            $tweet->user->notify(new TweetReplied($reply, Auth::user()));
+        }
 
         return response()->json([
             'success' => true,

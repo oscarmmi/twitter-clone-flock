@@ -34,6 +34,7 @@ export default function Search(props) {
         trends: ${trendsData},
         user:   ${userData},
         isLoggedIn: ${!!user},
+        unread_count: ${props.auth.unread_notifications_count || 0},
         followingMap: {},
 
         init() {
@@ -41,6 +42,15 @@ export default function Search(props) {
             this.users.forEach(u => {
                 this.followingMap[u.id] = u.is_following;
             });
+
+            // Polling for unread notifications every 15 seconds
+            if (this.isLoggedIn) {
+                setInterval(() => {
+                    axios.get('/notifications/unread-count')
+                        .then(res => { this.unread_count = res.data.count; })
+                        .catch(() => {});
+                }, 15000);
+            }
         },
 
         submitSearch(e) {
@@ -87,8 +97,13 @@ export default function Search(props) {
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
                         <span class="text-xl hidden xl:inline pr-4 text-zinc-100">Explore</span>
                     </a>
-                    <a href="/notifications" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 w-fit">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+                    <a href="/notifications" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 w-fit relative group">
+                        <div class="relative">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+                            <template x-if="unread_count > 0">
+                                <span class="absolute -top-1 -right-1 bg-[#1d9bf0] text-zinc-100 text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-black" x-text="unread_count"></span>
+                            </template>
+                        </div>
                         <span class="text-xl hidden xl:inline pr-4">Notifications</span>
                     </a>
                 </nav>

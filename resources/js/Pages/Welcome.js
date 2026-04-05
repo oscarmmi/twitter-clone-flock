@@ -40,11 +40,21 @@ export default function Welcome(props) {
         },
         toggleFollow(userId) {
             if (!this.isLoggedIn) { window.location.href = '/login'; return; }
+            
             const prev = this.followingMap[userId];
             this.followingMap[userId] = !prev;
+
             axios.post('/users/' + userId + '/follow')
-                .then(res => { this.followingMap[userId] = res.data.following; })
-                .catch(() => { this.followingMap[userId] = prev; });
+                .then(res => { 
+                    this.followingMap[userId] = res.data.following;
+                    const userObj = this.whoToFollow.find(u => u.id === userId);
+                    if (userObj) {
+                        userObj.followers = res.data.followers_count;
+                    }
+                })
+                .catch(() => { 
+                    this.followingMap[userId] = prev; 
+                });
         },
         submitSearch() {
             const q = this.searchQuery.trim();

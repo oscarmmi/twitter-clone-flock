@@ -37,6 +37,8 @@ export default function TweetShow(props) {
         whoToFollow: ${whoToFollowData},
         followingMap: {},
         loading: false,
+        showComposeModal: false,
+        modalTweetContent: '',
 
         init() {
             this.whoToFollow.forEach(u => { this.followingMap[u.id] = u.is_following; });
@@ -49,6 +51,21 @@ export default function TweetShow(props) {
                         .catch(() => {});
                 }, 15000);
             }
+        },
+
+        postTweet(body) {
+            if (!body.trim() || this.loading) return;
+            this.loading = true;
+            axios.post('/tweets', { body })
+                .then(() => {
+                    this.showComposeModal = false;
+                    this.modalTweetContent = '';
+                    window.location.href = '/dashboard'; // Redirect to see the new tweet
+                })
+                .catch(err => {
+                    alert(err.response?.data?.message || 'Error posting tweet');
+                })
+                .finally(() => { this.loading = false; });
         },
 
         toggleFollow(userId) {
@@ -118,6 +135,11 @@ export default function TweetShow(props) {
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                         <span class="text-xl hidden xl:inline pr-4">Home</span>
                     </a>
+
+                    <a href="/search" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 w-fit">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                        <span class="text-xl hidden xl:inline pr-4">Explore</span>
+                    </a>
                     
                     <a href="/notifications" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 w-fit relative group">
                         <div class="relative">
@@ -128,9 +150,17 @@ export default function TweetShow(props) {
                         </div>
                         <span class="text-xl hidden xl:inline pr-4">Notifications</span>
                     </a>
+
+                    <div x-show="isLoggedIn" class="pt-4">
+                        <button @click="showComposeModal = true" class="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white w-full xl:w-[90%] py-4 rounded-full font-bold text-xl transition-all shadow-lg hover:shadow-xl transform active:scale-95 flex items-center justify-center">
+                            <span class="hidden xl:inline">Post</span>
+                            <svg class="w-6 h-6 xl:hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M23 3c-6.62-.1-10.38 2.421-13.05 6.03C7.29 12.61 6 17.331 6 22h2c0-1.007.07-2.012.19-3H12c4.1 0 7.48-3.082 7.94-7.054C22.79 10.147 23.17 6.359 23 3zm-7 8h-1.5v2H14.5V11z" /></svg>
+                        </button>
+                    </div>
+
                     <template x-if="!isLoggedIn">
-                        <div class="space-y-2 mt-4">
-                            <a href="/login" class="flex items-center justify-center border border-zinc-700 hover:bg-zinc-900 text-white font-bold py-3 px-4 rounded-full transition w-full xl:block hidden text-center">Log in</a>
+                        <div class="space-y-4 mt-8">
+                            <a href="/login" class="flex items-center justify-center border border-zinc-700 hover:bg-zinc-800 text-white font-bold py-3 px-4 rounded-full transition w-full xl:block hidden text-center">Log in</a>
                             <a href="/register" class="flex items-center justify-center bg-white hover:bg-zinc-200 text-black font-bold py-3 px-4 rounded-full transition w-full xl:block hidden text-center">Register</a>
                         </div>
                     </template>
@@ -352,6 +382,62 @@ export default function TweetShow(props) {
         </div>
 
         ${ReplyModal()}
+
+        <!-- Compose Modal (logged-in only) -->
+        <div
+            x-show="showComposeModal"
+            class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            style="display:none"
+        >
+            <div @click.away="showComposeModal = false" class="bg-black w-full max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl border border-zinc-800 flex flex-col">
+                <div class="p-4 flex items-center border-b border-zinc-800 sticky top-0 bg-black z-10">
+                    <button @click="showComposeModal = false" class="p-2 hover:bg-zinc-900 rounded-full transition text-zinc-100">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                    <div class="ml-auto">
+                        <button 
+                            @click="postTweet(modalTweetContent)"
+                            :disabled="!modalTweetContent.trim() || loading"
+                            class="xl:hidden bg-[#1d9bf0] disabled:opacity-50 text-white px-4 py-1.5 rounded-full font-bold text-sm"
+                        >
+                            Post
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4 flex space-x-3 overflow-y-auto flex-1">
+                    <img :src="currentUser.avatar" class="w-10 h-10 rounded-full shrink-0 border border-zinc-900" alt="">
+                    <div class="flex-1">
+                        <textarea
+                            x-model="modalTweetContent"
+                            class="bg-transparent border-none focus:ring-0 w-full text-xl resize-none placeholder-zinc-500 min-h-[120px]"
+                            placeholder="What's happening?"
+                            autofocus
+                        ></textarea>
+                        <div class="mt-4 pt-3 border-t border-zinc-800 flex justify-between items-center">
+                            <div class="flex space-x-3 text-[#1d9bf0]">
+                                <div class="p-2 hover:bg-blue-500/10 rounded-full cursor-pointer transition">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12.75a1.5 1.5 0 001.5 1.5zm10.5-112.5h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+                                </div>
+                            </div>
+                            <button
+                                @click="postTweet(modalTweetContent)"
+                                :disabled="!modalTweetContent.trim() || loading"
+                                class="bg-[#1d9bf0] disabled:opacity-50 text-white px-5 py-2 rounded-full font-bold hover:bg-[#1a8cd8] transition flex items-center space-x-2"
+                            >
+                                <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
+                                <span x-text="loading ? 'Posting...' : 'Post'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     `;
 }

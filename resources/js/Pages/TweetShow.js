@@ -334,11 +334,11 @@ export default function TweetShow(props) {
                         <div class="divide-y divide-zinc-800/60" x-show="whoToFollow.length > 0">
                             <template x-for="u in whoToFollow" :key="u.id">
                                 <div class="flex items-center space-x-3 px-4 py-3 hover:bg-white/[0.03] transition group">
-                                    <a :href="'/u/' + u.id" class="shrink-0">
+                                    <a :href="#" class="shrink-0">
                                         <img :src="u.avatar" class="w-10 h-10 rounded-full object-cover ring-2 ring-transparent group-hover:ring-[#1d9bf0]/20 transition" alt="">
                                     </a>
                                     <div class="flex-1 min-w-0">
-                                        <a :href="'/u/' + u.id" class="font-bold text-sm hover:underline truncate block" x-text="u.name"></a>
+                                        <a :href="#" class="font-bold text-sm hover:underline truncate block" x-text="u.name"></a>
                                         <span class="text-zinc-500 text-xs truncate block" x-text="u.handle"></span>
                                         <span class="text-zinc-600 text-xs" x-text="u.followers + ' followers'"></span>
                                     </div>

@@ -213,14 +213,14 @@ export default function Search(props) {
                     <template x-for="u in users" :key="u.id">
                         <div class="flex items-start space-x-3 px-4 py-4 hover:bg-white/[0.03] transition border-b border-zinc-800 group">
                             <!-- Avatar -->
-                            <a :href="'/u/' + u.id" class="shrink-0">
+                            <a :href="#" class="shrink-0">
                                 <img :src="u.avatar || 'https://i.pravatar.cc/150?u=' + u.id" class="w-11 h-11 rounded-full object-cover ring-2 ring-transparent group-hover:ring-[#1d9bf0]/30 transition" alt="">
                             </a>
                             <!-- Info -->
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center justify-between flex-wrap gap-2">
                                     <div class="min-w-0">
-                                        <a :href="'/u/' + u.id" class="font-bold hover:underline truncate block" x-text="u.name"></a>
+                                        <a :href="#" class="font-bold hover:underline truncate block" x-text="u.name"></a>
                                         <span class="text-zinc-500 text-sm truncate block" x-text="u.handle"></span>
                                     </div>
                                     <!-- Follow / Unfollow button -->

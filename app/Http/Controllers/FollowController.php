@@ -16,12 +16,19 @@ class FollowController extends Controller
             return back()->with('error', 'You cannot follow yourself.');
         }
 
+        $isNowFollowing = false;
+
         if ($currentUser->follows($user)) {
             $currentUser->following()->detach($user->id);
+            $isNowFollowing = false;
         } else {
             $currentUser->following()->attach($user->id);
+            $isNowFollowing = true;
         }
 
-        return back();
+        return response()->json([
+            'following'       => $isNowFollowing,
+            'followers_count' => $user->followers()->count(),
+        ]);
     }
 }

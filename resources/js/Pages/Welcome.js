@@ -11,8 +11,9 @@ export default function Welcome(props) {
         id: user?.id || null
     }).replace(/"/g, '&quot;');
 
-    const tweetsData  = JSON.stringify(tweets   || []).replace(/"/g, '&quot;');
-    const trendsData  = JSON.stringify(props.trends  || []).replace(/"/g, '&quot;');
+    const tweetsData     = JSON.stringify(tweets            || []).replace(/"/g, '&quot;');
+    const trendsData     = JSON.stringify(props.trends       || []).replace(/"/g, '&quot;');
+    const whoToFollowData = JSON.stringify(props.whoToFollow || []).replace(/"/g, '&quot;');
 
     // Globals used by TweetCard / ReplyModal
     window._isLoggedIn          = !!user;
@@ -32,6 +33,19 @@ export default function Welcome(props) {
         isLoggedIn: ${!!user},
         tweets: ${tweetsData},
         trends: ${trendsData},
+        whoToFollow: ${whoToFollowData},
+        followingMap: {},
+        init() {
+            this.whoToFollow.forEach(u => { this.followingMap[u.id] = u.is_following; });
+        },
+        toggleFollow(userId) {
+            if (!this.isLoggedIn) { window.location.href = '/login'; return; }
+            const prev = this.followingMap[userId];
+            this.followingMap[userId] = !prev;
+            axios.post('/users/' + userId + '/follow')
+                .then(res => { this.followingMap[userId] = res.data.following; })
+                .catch(() => { this.followingMap[userId] = prev; });
+        },
         submitSearch() {
             const q = this.searchQuery.trim();
             if (q) window.location.href = '/search?q=' + encodeURIComponent(q);
@@ -238,7 +252,54 @@ export default function Welcome(props) {
                     </div>
                 </template>
 
-                <!-- Trends -->
+                <!-- Who to follow (logged-in users only) -->
+                <template x-if="isLoggedIn">
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+                        <h2 class="text-xl font-bold p-4 pb-2">Who to follow</h2>
+
+                        <!-- Suggestions list -->
+                        <div class="divide-y divide-zinc-800/60" x-show="whoToFollow.length > 0">
+                            <template x-for="u in whoToFollow" :key="u.id">
+                                <div class="flex items-center space-x-3 px-4 py-3 hover:bg-white/[0.03] transition group">
+                                    <!-- Avatar -->
+                                    <a :href="'/u/' + u.id" class="shrink-0">
+                                        <img
+                                            :src="u.avatar || 'https://i.pravatar.cc/150?u=' + u.id"
+                                            class="w-10 h-10 rounded-full object-cover ring-2 ring-transparent group-hover:ring-[#1d9bf0]/20 transition"
+                                            alt=""
+                                        >
+                                    </a>
+                                    <!-- Name / handle -->
+                                    <div class="flex-1 min-w-0">
+                                        <a :href="'/u/' + u.id" class="font-bold text-sm hover:underline truncate block" x-text="u.name"></a>
+                                        <span class="text-zinc-500 text-xs truncate block" x-text="u.handle"></span>
+                                        <span class="text-zinc-600 text-xs" x-text="u.followers + ' followers'"></span>
+                                    </div>
+                                    <!-- Follow / Following button -->
+                                    <button
+                                        @click="toggleFollow(u.id)"
+                                        :class="followingMap[u.id]
+                                            ? 'border border-zinc-600 text-zinc-100 hover:border-red-500 hover:text-red-400 hover:bg-red-500/5'
+                                            : 'bg-zinc-100 text-black hover:bg-white'"
+                                        class="px-4 py-1.5 rounded-full font-bold text-sm transition-all duration-200 shrink-0"
+                                        x-text="followingMap[u.id] ? 'Following' : 'Follow'"
+                                    ></button>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Empty state -->
+                        <div x-show="whoToFollow.length === 0" class="px-4 py-5 text-zinc-500 text-sm">
+                            You&apos;re all caught up — you&apos;re already following everyone!
+                        </div>
+
+                        <!-- Show more link -->
+                        <a href="/search" class="block px-4 py-3 text-[#1d9bf0] text-sm hover:bg-zinc-800 transition rounded-b-2xl border-t border-zinc-800/60">
+                            Show more people
+                        </a>
+                    </div>
+                </template>
+
                 <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
                     <h2 class="text-xl font-bold p-4">Trends for you</h2>
                     <div class="divide-y divide-zinc-800">
@@ -257,6 +318,10 @@ export default function Welcome(props) {
                 </div>
             </aside>
         </div>
+
+        
+
+
 
         <!-- Compose Modal (logged-in only) -->
         <div

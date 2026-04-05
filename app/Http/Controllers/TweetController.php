@@ -56,10 +56,37 @@ class TweetController extends Controller
             ->filter()
             ->values();
 
+        $whoToFollow = [];
+        if ($authUser) {
+            // Query the pivot table directly to avoid BelongsToMany pluck ambiguity in PostgreSQL
+            $followingIds = DB::table('follower_user')
+                ->where('follower_id', $authUser->id)
+                ->pluck('user_id')
+                ->push($authUser->id)   // also exclude self
+                ->unique()
+                ->values();
+
+            $whoToFollow = User::whereNotIn('id', $followingIds)
+                ->withCount('followers')
+                ->inRandomOrder()
+                ->limit(5)
+                ->get()
+                ->map(fn($u) => [
+                    'id'           => $u->id,
+                    'name'         => $u->name,
+                    'handle'       => '@' . strtolower(str_replace(' ', '', $u->name)),
+                    'avatar'       => $u->avatar ?? 'https://i.pravatar.cc/150?u=' . $u->id,
+                    'followers'    => $u->followers_count,
+                    'is_following' => false,
+                ])->values()->all();
+        }
+
         return inertia('Welcome', [
-            'tweets' => $tweets,
-            'trends' => $this->getTrends(),
+            'tweets'       => $tweets,
+            'trends'       => $this->getTrends(),
+            'whoToFollow'  => $whoToFollow,
         ]);
+
     }
 
     public function index(Request $request)
@@ -111,9 +138,24 @@ class TweetController extends Controller
             ->filter()
             ->values();
 
+        $whoToFollow = DB::table('users')
+            ->whereNotIn('id', DB::table('follower_user')->where('follower_id', $user->id)->pluck('user_id')->push($user->id))
+            ->inRandomOrder()
+            ->limit(5)
+            ->get()
+            ->map(fn($u) => [
+                'id'           => $u->id,
+                'name'         => $u->name,
+                'handle'       => '@' . strtolower(str_replace(' ', '', $u->name)),
+                'avatar'       => $u->avatar ?? 'https://i.pravatar.cc/150?u=' . $u->id,
+                'followers'    => DB::table('follower_user')->where('user_id', $u->id)->count(),
+                'is_following' => false,
+            ]);
+
         return inertia('Welcome', [
-            'tweets' => $tweets,
-            'trends' => $this->getTrends(),
+            'tweets'      => $tweets,
+            'trends'      => $this->getTrends(),
+            'whoToFollow' => $whoToFollow,
         ]);
     }
 

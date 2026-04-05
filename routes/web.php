@@ -28,6 +28,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Profile (public view)
     Route::get('/u/{user}', [UserController::class, 'show'])->name('user.show');
+
+    // Notifications
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
 });
 
 Route::middleware('auth')->group(function () {

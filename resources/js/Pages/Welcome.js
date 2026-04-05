@@ -109,7 +109,7 @@ export default function Welcome(props) {
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
                         <span class="text-xl hidden xl:inline pr-4">Explore</span>
                     </a>
-                    <a href="#" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 w-fit">
+                    <a href="/notifications" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 w-fit">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
                         <span class="text-xl hidden xl:inline pr-4">Notifications</span>
                     </a>

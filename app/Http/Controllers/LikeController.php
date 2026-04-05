@@ -6,6 +6,8 @@ use App\Models\Tweet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
+use App\Notifications\TweetLiked;
+
 class LikeController extends Controller
 {
     public function toggle(Request $request, Tweet $tweet)
@@ -18,6 +20,11 @@ class LikeController extends Controller
         } else {
             $user->likes()->attach($tweet->id);
             $liked = true;
+
+            // Notify the tweet owner if it's not the same user
+            if ($tweet->user_id !== $user->id) {
+                $tweet->user->notify(new TweetLiked($tweet, $user));
+            }
         }
 
         return response()->json([

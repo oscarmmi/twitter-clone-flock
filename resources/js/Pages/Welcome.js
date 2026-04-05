@@ -27,10 +27,15 @@ export default function Welcome(props) {
         modalTweetContent: '',
         isLoading: false,
         showComposeModal: false,
+        searchQuery: '',
         user: ${userData},
         isLoggedIn: ${!!user},
         tweets: ${tweetsData},
         trends: ${trendsData},
+        submitSearch() {
+            const q = this.searchQuery.trim();
+            if (q) window.location.href = '/search?q=' + encodeURIComponent(q);
+        },
         postTweet(content = null) {
             const body = content !== null ? content : this.tweetContent;
             if (!this.isLoggedIn) { window.location.href = '/login'; return; }
@@ -76,7 +81,7 @@ export default function Welcome(props) {
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                         <span class="text-xl hidden xl:inline pr-4">Home</span>
                     </a>
-                    <a href="#" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 w-fit">
+                    <a href="/search" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 w-fit">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
                         <span class="text-xl hidden xl:inline pr-4">Explore</span>
                     </a>
@@ -210,10 +215,17 @@ export default function Welcome(props) {
 
                 <!-- Search -->
                 <div class="sticky top-0 bg-black pt-1 pb-4 z-40">
-                    <div class="flex items-center space-x-4 bg-zinc-900 p-3 rounded-full border border-transparent focus-within:border-[#1d9bf0] focus-within:bg-black transition group">
-                        <svg class="w-5 h-5 text-zinc-500 group-focus-within:text-[#1d9bf0]" fill="currentColor" viewBox="0 0 24 24"><path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/></svg>
-                        <input type="text" placeholder="Search" class="bg-transparent border-none focus:ring-0 w-full placeholder-zinc-500">
-                    </div>
+                    <form @submit.prevent="submitSearch()" class="flex items-center space-x-4 bg-zinc-900 p-3 rounded-full border border-transparent focus-within:border-[#1d9bf0] focus-within:bg-black transition group">
+                        <svg class="w-5 h-5 text-zinc-500 group-focus-within:text-[#1d9bf0] shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/></svg>
+                        <input
+                            id="sidebar-search-input"
+                            type="text"
+                            x-model="searchQuery"
+                            @keydown.enter.prevent="submitSearch()"
+                            placeholder="Search Flock"
+                            class="bg-transparent border-none focus:ring-0 w-full placeholder-zinc-500 text-zinc-100"
+                        >
+                    </form>
                 </div>
 
                 <!-- Who to follow (guests) -->

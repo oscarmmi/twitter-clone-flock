@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tweet;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -234,19 +235,73 @@ class TweetController extends Controller
 
     public function search(Request $request)
     {
-        $query = $request->input('q');
-        
+        $query   = trim($request->input('q', ''));
+        $authUser = Auth::user();
+
         if ($query) {
-            $tweets = Tweet::where('body', 'like', "%{$query}%")
+            // --- Tweets ---
+            $tweetsRaw = Tweet::where('body', 'like', "%{$query}%")
                 ->whereNull('parent_id')
                 ->whereNull('retweet_id')
-                ->with(['user', 'likes', 'retweets'])
+                ->where('user_id', '!=', $authUser->id)
+                ->with(['user', 'likes', 'retweets', 'replies'])
                 ->latest()
-                ->get();
+                ->get()
+                ->map(function ($tweet) use ($authUser) {
+                    if (!$tweet->user) return null;
+                    return [
+                        'id'                 => $tweet->id,
+                        'user'               => $tweet->user->name,
+                        'handle'             => '@' . strtolower(str_replace(' ', '', $tweet->user->name)),
+                        'avatar'             => $tweet->user->avatar ?? 'https://i.pravatar.cc/150?u=' . $tweet->user_id,
+                        'time'               => $tweet->created_at->diffForHumans(short: true),
+                        'content'            => $tweet->body,
+                        'likes'              => $tweet->likes->count(),
+                        'retweets'           => $tweet->retweets->count(),
+                        'replies'            => $tweet->replies->count(),
+                        'liked_by_user'      => $authUser ? $tweet->likes->contains('id', $authUser->id) : false,
+                        'retweeted_by_user'  => $authUser ? $tweet->retweets->contains('user_id', $authUser->id) : false,
+                        'replies_list'       => [],
+                        'is_retweet'         => false,
+                        'retweeted_by'       => null,
+                        'retweeted_by_handle'=> null,
+                    ];
+                })
+                ->filter()
+                ->values();
+
+            // --- Users ---
+            $usersRaw = User::where('name', 'like', "%{$query}%")
+                ->orWhere('email', 'like', "%{$query}%")
+                ->where('id', '!=', $authUser->id)
+                ->withCount(['tweets', 'followers', 'following'])
+                ->latest()
+                ->limit(20)
+                ->get()
+                ->map(function ($u) use ($authUser) {
+                    return [
+                        'id'             => $u->id,
+                        'name'           => $u->name,
+                        'handle'         => '@' . strtolower(str_replace(' ', '', $u->name)),
+                        'avatar'         => $u->avatar ?? 'https://i.pravatar.cc/150?u=' . $u->id,
+                        'bio'            => $u->bio ?? null,
+                        'followers'      => $u->followers_count,
+                        'following'      => $u->following_count,
+                        'tweets_count'   => $u->tweets_count,
+                        'is_following'   => $authUser ? $authUser->follows($u) : false,
+                        'is_self'        => $authUser ? $authUser->id === $u->id : false,
+                    ];
+                });
         } else {
-            $tweets = collect();
+            $tweetsRaw = collect();
+            $usersRaw  = collect();
         }
 
-        return view('search', compact('tweets', 'query'));
+        return inertia('Search', [
+            'query'  => $query,
+            'tweets' => $tweetsRaw,
+            'users'  => $usersRaw,
+            'trends' => $this->getTrends(),
+        ]);
     }
 }

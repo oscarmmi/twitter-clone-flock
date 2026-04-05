@@ -1,210 +1,409 @@
+import { Icons, TweetCard, ReplyModal } from '../components/icons.js';
+
 export default function Welcome(props) {
+    const user = props.auth.user;
+    const tweets = props.tweets;
+
+    const userData = JSON.stringify({
+        name: user?.name || 'Guest',
+        handle: user ? '@' + user.name.toLowerCase().replace(/\s+/g, '') : '@guest',
+        avatar: user?.avatar || `https://i.pravatar.cc/150?u=${user?.id || 'guest'}`,
+        id: user?.id || null
+    }).replace(/"/g, '&quot;');
+
+    const tweetsData     = JSON.stringify(tweets            || []).replace(/"/g, '&quot;');
+    const trendsData     = JSON.stringify(props.trends       || []).replace(/"/g, '&quot;');
+    const whoToFollowData = JSON.stringify(props.whoToFollow || []).replace(/"/g, '&quot;');
+
+    // Globals used by TweetCard / ReplyModal
+    window._isLoggedIn          = !!user;
+    window._currentUserAvatar   = user?.avatar || `https://i.pravatar.cc/150?u=${user?.id || 'me'}`;
+    window._currentUserName     = user?.name   || null;
+    window._currentUserHandle   = user ? '@' + user.name.toLowerCase().replace(/\s+/g, '') : null;
+
     return `
     <div x-data="{
         activeTab: 'for-you',
         tweetContent: '',
+        modalTweetContent: '',
         isLoading: false,
-        user: { name: 'Oscar', handle: '@oscar', avatar: 'https://i.pravatar.cc/150?u=oscar' },
-        tweets: [
-            { id: 1, user: 'John Doe', handle: '@johndoe', time: '2h', content: 'Building something cool with Laravel and Inertia! 🚀 @laravelframework #laravel', likes: 12, retweets: 5, replies: 2, avatar: 'https://i.pravatar.cc/150?u=1' },
-            { id: 2, user: 'Jane Smith', handle: '@janesmith', time: '4h', content: 'Twitter clone is looking good. Alpine.js is amazing for this! ✨ #alpinejs #tailwindcss', likes: 45, retweets: 12, replies: 8, avatar: 'https://i.pravatar.cc/150?u=2' },
-            { id: 3, user: 'Taylor Otwell', handle: '@taylorotwell', time: '1d', content: 'Laravel 12 is out now! Check out the documentation at laravel.com/docs', likes: 1200, retweets: 300, replies: 150, avatar: 'https://i.pravatar.cc/150?u=3' }
-        ],
-        postTweet() {
-            if (this.tweetContent.trim()) {
-                this.isLoading = true;
-                setTimeout(() => {
-                    this.tweets.unshift({
-                        id: Date.now(),
-                        user: this.user.name,
-                        handle: this.user.handle,
-                        time: 'now',
-                        content: this.tweetContent,
-                        likes: 0,
-                        retweets: 0,
-                        replies: 0,
-                        avatar: this.user.avatar
-                    });
-                    this.tweetContent = '';
-                    this.isLoading = false;
-                }, 500);
-            }
-        }
-    }" class="flex min-h-screen max-w-[1300px] mx-auto overflow-x-hidden bg-black text-zinc-100 font-sans selection:bg-blue-500/30">
-
-        <!-- Sidebar Navigation -->
-        <aside class="w-[72px] xl:w-[275px] flex flex-col items-center xl:items-start p-2 sm:p-4 sticky top-0 h-screen overflow-y-auto">
-            <div class="hover:bg-zinc-900 rounded-full p-3 transition mb-2">
-                <svg class="w-8 h-8 fill-zinc-100" viewBox="0 0 24 24"><path d="M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z"/></svg>
-            </div>
+        showComposeModal: false,
+        searchQuery: '',
+        user: ${userData},
+        isLoggedIn: ${!!user},
+        unread_count: ${props.auth.unread_notifications_count || 0},
+        tweets: ${tweetsData},
+        trends: ${trendsData},
+        whoToFollow: ${whoToFollowData},
+        followingMap: {},
+        init() {
+            this.whoToFollow.forEach(u => { this.followingMap[u.id] = u.is_following; });
             
-            <nav class="flex-1 space-y-1 w-full text-zinc-100">
-                <a href="#" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 group w-fit font-bold">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                    <span class="text-xl hidden xl:inline pr-4">Home</span>
-                </a>
-                <a href="#" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 group w-fit">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
-                    <span class="text-xl hidden xl:inline pr-4">Explore</span>
-                </a>
-                <a href="#" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 group w-fit">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
-                    <span class="text-xl hidden xl:inline pr-4">Notifications</span>
-                </a>
-                <a href="#" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 group w-fit">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>
-                    <span class="text-xl hidden xl:inline pr-4">Messages</span>
-                </a>
-                <a href="#" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 group w-fit">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-                    <span class="text-xl hidden xl:inline pr-4">Profile</span>
-                </a>
-            </nav>
+            // Polling for unread notifications every 15 seconds
+            if (this.isLoggedIn) {
+                setInterval(() => {
+                    axios.get('/notifications/unread-count')
+                        .then(res => { this.unread_count = res.data.count; })
+                        .catch(() => {});
+                }, 15000);
+            }
+        },
+        toggleFollow(userId) {
+            if (!this.isLoggedIn) { window.location.href = '/login'; return; }
+            
+            const prev = this.followingMap[userId];
+            this.followingMap[userId] = !prev;
 
-            <button class="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-bold py-3 xl:w-full rounded-full flex items-center justify-center transition-all duration-200 mt-4 mb-4">
-                <span class="hidden xl:inline">Post</span>
-            </button>
+            axios.post('/users/' + userId + '/follow')
+                .then(res => { 
+                    this.followingMap[userId] = res.data.following;
+                    const userObj = this.whoToFollow.find(u => u.id === userId);
+                    if (userObj) {
+                        userObj.followers = res.data.followers_count;
+                    }
+                })
+                .catch(() => { 
+                    this.followingMap[userId] = prev; 
+                });
+        },
+        submitSearch() {
+            const q = this.searchQuery.trim();
+            if (q) window.location.href = '/search?q=' + encodeURIComponent(q);
+        },
+        postTweet(content = null) {
+            const body = content !== null ? content : this.tweetContent;
+            if (!this.isLoggedIn) { window.location.href = '/login'; return; }
+            if (!body.trim()) return;
+            this.isLoading = true;
+            axios.post('/tweets', { body })
+                .then(() => {
+                    this.isLoading = false;
+                    if (content !== null) {
+                        this.modalTweetContent = '';
+                        this.showComposeModal = false;
+                    } else {
+                        this.tweetContent = '';
+                    }
+                    window.location.reload();
+                })
+                .catch(error => {
+                    this.isLoading = false;
+                    const message = error.response?.data?.errors?.body?.[0] || 'Something went wrong';
+                    alert(message);
+                });
+        },
+        logout() {
+            axios.post('/logout')
+                .then(() => window.location.href = '/')
+                .catch(() => window.location.href = '/');
+        }
+    }" class="flex min-h-screen w-full bg-black text-zinc-100 font-sans selection:bg-blue-500/30">
 
-            <!-- Current User Pop -->
-            <div class="mt-auto p-3 hover:bg-zinc-900 rounded-full transition flex items-center xl:space-x-3 w-fit xl:w-full cursor-pointer group">
-                <img :src="user.avatar" class="w-10 h-10 rounded-full" :alt="user.name">
-                <div class="hidden xl:block flex-1">
-                    <p class="font-bold text-sm" x-text="user.name"></p>
-                    <p class="text-zinc-500 text-sm" x-text="user.handle"></p>
+        <div class="flex w-full max-w-[1300px] mx-auto">
+
+            <!-- ── Sidebar ── -->
+            <aside class="w-[72px] xl:w-[275px] flex flex-col items-center xl:items-start p-2 sm:p-4 sticky top-0 h-screen overflow-y-auto shrink-0 transition-all">
+
+                <!-- Logo -->
+                <div class="hover:bg-zinc-900 rounded-full p-3 transition mb-2">
+                    <svg class="w-8 h-8 fill-zinc-100" viewBox="0 0 24 24"><path d="M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z"/></svg>
                 </div>
-            </div>
-        </aside>
 
-        <!-- Main Timeline -->
-        <main class="flex-1 max-w-[600px] border-x border-zinc-800">
-            <!-- Header -->
-            <div class="sticky top-0 bg-black/60 backdrop-blur-xl border-b border-zinc-800 z-50">
-                <h1 class="p-4 text-xl font-bold">Home</h1>
-                <div class="flex text-zinc-500 font-bold border-b border-zinc-800">
-                    <button @click="activeTab = 'for-you'" class="flex-1 hover:bg-zinc-900 py-4 transition relative">
-                        <span :class="activeTab === 'for-you' ? 'text-zinc-100' : ''">For you</span>
-                        <div x-show="activeTab === 'for-you'" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-[#1d9bf0] rounded-full"></div>
-                    </button>
-                    <button @click="activeTab = 'following'" class="flex-1 hover:bg-zinc-900 py-4 transition relative">
-                        <span :class="activeTab === 'following' ? 'text-zinc-100' : ''">Following</span>
-                        <div x-show="activeTab === 'following'" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-[#1d9bf0] rounded-full"></div>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Create Tweet -->
-            <div class="p-4 flex space-x-3 border-b border-zinc-800">
-                <img :src="user.avatar" class="w-10 h-10 rounded-full shrink-0" alt="">
-                <div class="flex-1 pt-2">
-                    <textarea 
-                        x-model="tweetContent"
-                        class="bg-transparent border-none focus:ring-0 w-full text-xl resize-none placeholder-zinc-500 overflow-hidden" 
-                        placeholder="What's happening?"
-                        rows="1"
-                        @input="$el.style.height = ''; $el.style.height = $el.scrollHeight + 'px'"
-                    ></textarea>
-                    
-                    <div class="mt-4 pt-3 border-t border-zinc-800 flex justify-between items-center">
-                        <div class="flex space-x-3 text-[#1d9bf0]">
-                            <div class="p-2 hover:bg-blue-500/10 rounded-full cursor-pointer transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12.75a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
-                            </div>
+                <!-- Nav links -->
+                <nav class="flex-1 space-y-1 w-full text-zinc-100">
+                    <a href="${user ? '/dashboard' : '/'}" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 w-fit font-bold">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                        <span class="text-xl hidden xl:inline pr-4">Home</span>
+                    </a>
+                    <a href="/search" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 w-fit">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                        <span class="text-xl hidden xl:inline pr-4">Explore</span>
+                    </a>
+                    <a href="/notifications" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 w-fit relative group">
+                        <div class="relative">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+                            <template x-if="unread_count > 0">
+                                <span class="absolute -top-1 -right-1 bg-[#1d9bf0] text-zinc-100 text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-black" x-text="unread_count"></span>
+                            </template>
                         </div>
-                        <button 
-                            @click="postTweet()"
-                            :disabled="!tweetContent.trim() || isLoading"
-                            class="bg-[#1d9bf0] disabled:opacity-50 text-white px-5 py-2 rounded-full font-bold hover:bg-[#1a8cd8] transition flex items-center space-x-2"
-                        >
-                            <span x-show="isLoading" class="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
-                            <span x-text="isLoading ? 'Posting...' : 'Post'"></span>
+                        <span class="text-xl hidden xl:inline pr-4">Notifications</span>
+                    </a>
+                </nav>
+
+                <!-- Post button (logged in) -->
+                <template x-if="isLoggedIn">
+                    <button
+                        @click="showComposeModal = true"
+                        class="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-bold py-3 xl:w-full rounded-full flex items-center justify-center transition-all duration-200 mt-4 mb-4"
+                    >
+                        <span class="hidden xl:inline">Post</span>
+                        <svg class="w-6 h-6 xl:hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M23.085 2.915a2.5 2.5 0 00-3.536 0L8.293 14.17l-.707 3.536 3.536-.707L22.378 5.743a2.5 2.5 0 000-3.535 zM3 19.5V21h1.5l9.56-9.56-1.5-1.5L3 19.5z"/></svg>
+                    </button>
+                </template>
+
+                <!-- Auth buttons (guest) -->
+                <template x-if="!isLoggedIn">
+                    <div class="w-full space-y-3 mt-4 mb-4">
+                        <a href="/login" class="flex items-center justify-center bg-transparent border border-zinc-700 hover:bg-zinc-900 text-white font-bold py-3 px-4 rounded-full transition-all duration-200 w-full text-center">
+                            <span class="hidden xl:inline">Log in</span>
+                            <svg class="w-6 h-6 xl:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                        </a>
+                        <a href="/register" class="flex items-center justify-center bg-white hover:bg-zinc-200 text-black font-bold py-3 px-4 rounded-full transition-all duration-200 w-full text-center">
+                            <span class="hidden xl:inline">Register</span>
+                            <svg class="w-6 h-6 xl:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                        </a>
+                    </div>
+                </template>
+
+                <!-- User pill with logout (logged in) -->
+                <div
+                    x-show="isLoggedIn"
+                    x-data="{ open: false }"
+                    @click="open = !open"
+                    class="mt-auto p-3 hover:bg-zinc-900 rounded-full transition flex items-center xl:space-x-3 w-fit xl:w-full cursor-pointer group relative"
+                >
+                    <img :src="user.avatar" class="w-10 h-10 rounded-full" :alt="user.name">
+                    <div class="hidden xl:block flex-1 min-w-0">
+                        <p class="font-bold text-sm truncate" x-text="user.name"></p>
+                        <p class="text-zinc-500 text-sm truncate" x-text="user.handle"></p>
+                    </div>
+                    <div class="hidden xl:block ml-auto text-zinc-500">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M3 12c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zm9 2c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm7 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
+                    </div>
+                    <!-- Logout dropdown -->
+                    <div
+                        x-show="open" x-transition
+                        @click.away="open = false"
+                        class="absolute bottom-full left-0 w-full mb-2 bg-black border border-zinc-800 rounded-xl shadow-[0_0_15px_rgba(255,255,255,0.1)] overflow-hidden z-50"
+                    >
+                        <button @click="logout()" class="w-full text-left p-4 hover:bg-zinc-900 transition font-bold text-sm">
+                            Log out <span x-text="user.handle"></span>
                         </button>
                     </div>
                 </div>
-            </div>
+            </aside>
 
-            <!-- Feed -->
-            <div class="divide-y divide-zinc-800">
-                <template x-for="tweet in tweets" :key="tweet.id">
-                    <div class="p-4 hover:bg-zinc-900/50 transition cursor-pointer flex space-x-3 group border-b border-zinc-800">
-                        <img :src="tweet.avatar" class="w-10 h-10 rounded-full shrink-0" alt="">
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center space-x-1">
-                                <span class="font-bold hover:underline" x-text="tweet.user"></span>
-                                <span class="text-zinc-500 text-sm truncate" x-text="tweet.handle"></span>
-                                <span class="text-zinc-500 text-sm">·</span>
-                                <span class="text-zinc-500 text-sm" x-text="tweet.time"></span>
-                            </div>
-                            <p class="mt-1 text-zinc-100 whitespace-pre-wrap" x-text="tweet.content"></p>
-                            
-                            <!-- Actions -->
-                            <div class="flex justify-between mt-3 text-zinc-500 max-w-md">
-                                <div class="flex items-center space-x-2 group-hover:text-blue-500 transition">
-                                    <div class="p-2 group-hover:bg-blue-500/10 rounded-full"><svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25-9 3.694-9 8.25c0 1.635.523 3.16 1.442 4.475l-.822 2.522 2.592-.733c1.114.652 2.392 1.01 3.788 1.01z"/></svg></div>
-                                    <span x-text="tweet.replies" class="text-xs"></span>
+            <!-- ── Main Timeline ── -->
+            <main class="flex-1 min-w-0 border-x border-zinc-800 xl:max-w-[600px]">
+
+                <!-- Header -->
+                <div class="sticky top-0 bg-black/60 backdrop-blur-xl border-b border-zinc-800 z-50">
+                    <h1 class="p-4 text-xl font-bold">Home</h1>
+                    <div class="flex text-zinc-500 font-bold border-b border-zinc-800">
+                        <button @click="activeTab = 'for-you'" class="flex-1 hover:bg-zinc-900 py-4 transition relative">
+                            <span :class="activeTab === 'for-you' ? 'text-zinc-100' : ''">For you</span>
+                            <div x-show="activeTab === 'for-you'" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-[#1d9bf0] rounded-full"></div>
+                        </button>
+                        <button @click="activeTab = 'following'" class="flex-1 hover:bg-zinc-900 py-4 transition relative">
+                            <span :class="activeTab === 'following' ? 'text-zinc-100' : ''">Following</span>
+                            <div x-show="activeTab === 'following'" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-[#1d9bf0] rounded-full"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Compose box (only for logged-in users) -->
+                <template x-if="isLoggedIn">
+                    <div class="p-4 flex space-x-3 border-b border-zinc-800">
+                        <img :src="user.avatar" class="w-10 h-10 rounded-full shrink-0" alt="">
+                        <div class="flex-1 pt-2">
+                            <textarea
+                                x-model="tweetContent"
+                                class="bg-transparent border-none focus:ring-0 w-full text-xl resize-none placeholder-zinc-500 overflow-hidden"
+                                placeholder="What's happening?"
+                                rows="1"
+                                @input="$el.style.height = ''; $el.style.height = $el.scrollHeight + 'px'"
+                            ></textarea>
+                            <div class="mt-4 pt-3 border-t border-zinc-800 flex justify-between items-center">
+                                <div class="flex space-x-3 text-[#1d9bf0]">
+                                    <div class="p-2 hover:bg-blue-500/10 rounded-full cursor-pointer transition">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12.75a1.5 1.5 0 001.5 1.5zm10.5-112.5h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+                                    </div>
                                 </div>
-                                <div class="flex items-center space-x-2 group-hover:text-green-500 transition">
-                                    <div class="p-2 group-hover:bg-green-500/10 rounded-full"><svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg></div>
-                                    <span x-text="tweet.retweets" class="text-xs"></span>
-                                </div>
-                                <div class="flex items-center space-x-2 group-hover:text-pink-500 transition">
-                                    <div class="p-2 group-hover:bg-pink-500/10 rounded-full"><svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg></div>
-                                    <span x-text="tweet.likes" class="text-xs"></span>
-                                </div>
+                                <button
+                                    @click="postTweet()"
+                                    :disabled="!tweetContent.trim() || isLoading"
+                                    class="bg-[#1d9bf0] disabled:opacity-50 text-white px-5 py-2 rounded-full font-bold hover:bg-[#1a8cd8] transition flex items-center space-x-2"
+                                >
+                                    <span x-show="isLoading" class="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
+                                    <span x-text="isLoading ? 'Posting...' : 'Post'"></span>
+                                </button>
                             </div>
                         </div>
                     </div>
                 </template>
-            </div>
-        </main>
 
-        <!-- Right Side Widgets -->
-        <aside class="hidden lg:block w-[350px] p-4 space-y-4">
-            <!-- Search -->
-            <div class="sticky top-0 bg-black pt-1 pb-4 z-40">
-                <div class="flex items-center space-x-4 bg-zinc-900 p-3 rounded-full border border-transparent focus-within:border-[#1d9bf0] focus-within:bg-black transition group">
-                    <svg class="w-5 h-5 text-zinc-500 group-focus-within:text-[#1d9bf0]" fill="currentColor" viewBox="0 0 24 24"><path d="M21.172 19.414l-4.143-4.142A7 7 0 1010 17a7 7 0 105.272-2.372l4.142 4.142c.488.488 1.28.488 1.768 0 .488-.488.488-1.28 0-1.768zM10 15a5 5 0 110-10 5 5 0 010 10z"/></svg>
-                    <input type="text" placeholder="Search" class="bg-transparent border-none focus:ring-0 w-full placeholder-zinc-500">
-                </div>
-            </div>
-
-            <!-- Trends -->
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-                <h2 class="text-xl font-bold p-4">Trends for you</h2>
-                <div class="divide-y divide-zinc-800">
-                    <template x-for="i in 5">
-                        <div class="px-4 py-3 hover:bg-zinc-800 transition cursor-pointer flex justify-between">
-                            <div>
-                                <p class="text-zinc-500 text-xs">Trending in Technology</p>
-                                <p class="font-bold">#Laravel</p>
-                                <p class="text-zinc-500 text-xs">20.5K posts</p>
-                            </div>
+                <!-- Guest CTA banner -->
+                <template x-if="!isLoggedIn">
+                    <div class="p-6 border-b border-zinc-800 text-center space-y-3">
+                        <p class="text-zinc-400 text-sm">Join the conversation</p>
+                        <div class="flex justify-center gap-3">
+                            <a href="/login" class="border border-zinc-600 text-white font-bold px-5 py-2 rounded-full hover:bg-zinc-800 transition text-sm">Log in</a>
+                            <a href="/register" class="bg-[#1d9bf0] text-white font-bold px-5 py-2 rounded-full hover:bg-[#1a8cd8] transition text-sm">Sign up</a>
                         </div>
-                    </template>
-                </div>
-                <a href="#" class="block p-4 text-[#1d9bf0] hover:bg-zinc-800 transition text-sm">Show more</a>
-            </div>
+                    </div>
+                </template>
 
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-                <h2 class="text-xl font-bold p-4">Who to follow</h2>
+                <!-- Feed -->
                 <div class="divide-y divide-zinc-800">
-                    <template x-for="user in ['Antigravity', 'Taylor Otwell', 'InertiaJS']">
-                        <div class="px-4 py-3 hover:bg-zinc-800 transition cursor-pointer flex items-center justify-between">
-                            <div class="flex items-center space-x-2">
-                                <div class="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
-                                     <img src="https://i.pravatar.cc/100?u=follow" alt="">
+                    ${TweetCard()}
+                </div>
+            </main>
+
+            <!-- ── Right Sidebar ── -->
+            <aside class="hidden lg:block w-[350px] p-4 space-y-4 shrink-0">
+
+                <!-- Search -->
+                <div class="sticky top-0 bg-black pt-1 pb-4 z-40">
+                    <form @submit.prevent="submitSearch()" class="flex items-center space-x-4 bg-zinc-900 p-3 rounded-full border border-transparent focus-within:border-[#1d9bf0] focus-within:bg-black transition group">
+                        <svg class="w-5 h-5 text-zinc-500 group-focus-within:text-[#1d9bf0] shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/></svg>
+                        <input
+                            id="sidebar-search-input"
+                            type="text"
+                            x-model="searchQuery"
+                            @keydown.enter.prevent="submitSearch()"
+                            placeholder="Search Flock"
+                            class="bg-transparent border-none focus:ring-0 w-full placeholder-zinc-500 text-zinc-100"
+                        >
+                    </form>
+                </div>
+
+                <!-- Who to follow (guests) -->
+                <template x-if="!isLoggedIn">
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-3">
+                        <h2 class="text-xl font-bold">New to Flock?</h2>
+                        <p class="text-zinc-400 text-sm">Sign up to follow people and see their posts in your timeline.</p>
+                        <a href="/register" class="bg-[#1d9bf0] text-white w-full block text-center font-bold py-2 rounded-full hover:bg-[#1a8cd8] transition">Create account</a>
+                        <a href="/login" class="border border-zinc-600 text-white w-full block text-center font-bold py-2 rounded-full hover:bg-zinc-800 transition">Sign in</a>
+                    </div>
+                </template>
+
+                <!-- Who to follow (logged-in users only) -->
+                <template x-if="isLoggedIn">
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+                        <h2 class="text-xl font-bold p-4 pb-2">Who to follow</h2>
+
+                        <!-- Suggestions list -->
+                        <div class="divide-y divide-zinc-800/60" x-show="whoToFollow.length > 0">
+                            <template x-for="u in whoToFollow" :key="u.id">
+                                <div class="flex items-center space-x-3 px-4 py-3 hover:bg-white/[0.03] transition group">
+                                    <!-- Avatar -->
+                                    <a :href="'/u/' + u.id" class="shrink-0">
+                                        <img
+                                            :src="u.avatar || 'https://i.pravatar.cc/150?u=' + u.id"
+                                            class="w-10 h-10 rounded-full object-cover ring-2 ring-transparent group-hover:ring-[#1d9bf0]/20 transition"
+                                            alt=""
+                                        >
+                                    </a>
+                                    <!-- Name / handle -->
+                                    <div class="flex-1 min-w-0">
+                                        <a :href="'/u/' + u.id" class="font-bold text-sm hover:underline truncate block" x-text="u.name"></a>
+                                        <span class="text-zinc-500 text-xs truncate block" x-text="u.handle"></span>
+                                        <span class="text-zinc-600 text-xs" x-text="u.followers + ' followers'"></span>
+                                    </div>
+                                    <!-- Follow / Following button -->
+                                    <button
+                                        @click="toggleFollow(u.id)"
+                                        :class="followingMap[u.id]
+                                            ? 'border border-zinc-600 text-zinc-100 hover:border-red-500 hover:text-red-400 hover:bg-red-500/5'
+                                            : 'bg-zinc-100 text-black hover:bg-white'"
+                                        class="px-4 py-1.5 rounded-full font-bold text-sm transition-all duration-200 shrink-0"
+                                        x-text="followingMap[u.id] ? 'Following' : 'Follow'"
+                                    ></button>
                                 </div>
-                                <div class="min-w-0">
-                                    <p class="font-bold text-sm truncate" x-text="user"></p>
-                                    <p class="text-zinc-500 text-xs truncate" x-text="'@' + user.toLowerCase().replace(' ', '')"></p>
+                            </template>
+                        </div>
+
+                        <!-- Empty state -->
+                        <div x-show="whoToFollow.length === 0" class="px-4 py-5 text-zinc-500 text-sm">
+                            You&apos;re all caught up — you&apos;re already following everyone!
+                        </div>
+
+                        <!-- Show more link -->
+                        <a href="/search" class="block px-4 py-3 text-[#1d9bf0] text-sm hover:bg-zinc-800 transition rounded-b-2xl border-t border-zinc-800/60">
+                            Show more people
+                        </a>
+                    </div>
+                </template>
+
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+                    <h2 class="text-xl font-bold p-4">Trends for you</h2>
+                    <div class="divide-y divide-zinc-800">
+                        <template x-for="(trend, index) in trends" :key="index">
+                            <div class="px-4 py-3 hover:bg-zinc-800 transition cursor-pointer flex justify-between items-start">
+                                <div>
+                                    <p class="text-zinc-500 text-xs">Trending in Technology</p>
+                                    <p class="font-bold" x-text="trend.tag"></p>
+                                    <p class="text-zinc-500 text-xs" x-text="trend.label"></p>
+                                </div>
+                                <span class="text-zinc-600 text-xs mt-1" x-text="'#' + (index + 1)"></span>
+                            </div>
+                        </template>
+                        <div x-show="trends.length === 0" class="px-4 py-6 text-center text-zinc-500 text-sm">No trends yet</div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        
+
+
+
+        <!-- Compose Modal (logged-in only) -->
+        <div
+            x-show="showComposeModal"
+            class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            style="display:none"
+        >
+            <div @click.away="showComposeModal = false" class="bg-black w-full max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl border border-zinc-800 flex flex-col">
+                <div class="p-4 flex items-center border-b border-zinc-800 sticky top-0 bg-black z-10">
+                    <button @click="showComposeModal = false" class="p-2 hover:bg-zinc-900 rounded-full transition text-zinc-100">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                    <div class="ml-auto">
+                        <button 
+                            @click="postTweet(modalTweetContent)"
+                            :disabled="!modalTweetContent.trim() || isLoading"
+                            class="xl:hidden bg-[#1d9bf0] disabled:opacity-50 text-white px-4 py-1.5 rounded-full font-bold text-sm"
+                        >
+                            Post
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4 flex space-x-3 overflow-y-auto flex-1">
+                    <img :src="user.avatar" class="w-10 h-10 rounded-full shrink-0 border border-zinc-900" alt="">
+                    <div class="flex-1">
+                        <textarea
+                            x-model="modalTweetContent"
+                            class="bg-transparent border-none focus:ring-0 w-full text-xl resize-none placeholder-zinc-500 min-h-[120px]"
+                            placeholder="What's happening?"
+                            autofocus
+                        ></textarea>
+                        <div class="mt-4 pt-3 border-t border-zinc-800 flex justify-between items-center">
+                            <div class="flex space-x-3 text-[#1d9bf0]">
+                                <div class="p-2 hover:bg-blue-500/10 rounded-full cursor-pointer transition">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12.75a1.5 1.5 0 001.5 1.5zm10.5-112.5h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
                                 </div>
                             </div>
-                            <button class="bg-zinc-100 text-black px-4 py-1.5 rounded-full font-bold text-sm hover:bg-zinc-200 transition">Follow</button>
+                            <button
+                                @click="postTweet(modalTweetContent)"
+                                :disabled="!modalTweetContent.trim() || isLoading"
+                                class="bg-[#1d9bf0] disabled:opacity-50 text-white px-5 py-2 rounded-full font-bold hover:bg-[#1a8cd8] transition flex items-center space-x-2"
+                            >
+                                <span x-show="isLoading" class="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
+                                <span x-text="isLoading ? 'Posting...' : 'Post'"></span>
+                            </button>
                         </div>
-                    </template>
+                    </div>
                 </div>
             </div>
-            
-        </aside>
+        </div>
     </div>
+    ${ReplyModal()}
     `;
 }

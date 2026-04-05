@@ -133,47 +133,80 @@ class FakeDataSeeder extends Seeder
                       'Oliveira', 'Lima', 'Souza', 'Santos', 'Costa', 'Carvalho', 'Pinto', 'Correia',
                       'Mendes', 'Araújo'];
 
-        $this->command->info('🌱 Starting FakeDataSeeder...');
-        $this->command->info('Creating 50 users with 50 tweets each (2,500 tweets total)...');
-        $bar = $this->command->getOutput()->createProgressBar(50);
-        $bar->start();
+        $this->command->info('🌱 Starting FakeDataSeeder with Social Interactions...');
 
+        // 1. CREATE ALL USERS FIRST
+        $this->command->info('Creating 50 active users...');
+        $allUsers = [];
         for ($i = 0; $i < 50; $i++) {
             $firstName = $firstNames[$i];
             $lastName  = $lastNames[$i];
             $name      = $firstName . ' ' . $lastName;
-            $email     = strtolower($firstName) . '.' . strtolower(str_replace('ó','o', str_replace('é','e', str_replace('á','a', str_replace('í','i', str_replace('ú','u', $lastName)))))) . $i . '@flock.test';
+            $email     = strtolower($firstName) . '.' . strtolower(str_replace(['ó','é','á','í','ú'], ['o','e','a','i','u'], $lastName)) . $i . '@flock.test';
 
-            $user = User::create([
+            $allUsers[] = User::create([
                 'name'     => $name,
                 'email'    => $email,
                 'password' => Hash::make('password'),
+                'created_at' => now()->subDays(rand(30, 60)),
             ]);
+        }
 
-            // Shuffle tweets so each user has a different order
-            $tweets = $tweetTemplates;
-            shuffle($tweets);
+        // 2. CREATE TWEETS
+        $this->command->info('Generating tweets for all users...');
+        $allTweets = [];
+        $bar = $this->command->getOutput()->createProgressBar(count($allUsers));
+        $bar->start();
 
-            foreach (array_slice($tweets, 0, 50) as $j => $body) {
-                // Pick 1–2 hashtags from the matching group (same index as tweet template)
+        foreach ($allUsers as $user) {
+            $tweetsToCreate = $tweetTemplates;
+            shuffle($tweetsToCreate);
+
+            foreach (array_slice($tweetsToCreate, 0, 25) as $j => $body) {
                 $tagGroup = $hashtags[$j % count($hashtags)];
-                $count    = rand(1, 2);
-                shuffle($tagGroup);
-                $tags = implode(' ', array_slice($tagGroup, 0, $count));
+                $tags = implode(' ', array_slice($tagGroup, 0, rand(1, 2)));
 
-                Tweet::create([
+                $allTweets[] = Tweet::create([
                     'user_id'    => $user->id,
                     'body'       => $body . "\n\n" . $tags,
                     'created_at' => now()->subMinutes(rand(1, 43200)),
                     'updated_at' => now(),
                 ]);
             }
-
             $bar->advance();
         }
-
         $bar->finish();
         $this->command->newLine();
-        $this->command->info('✅ Done! Created ' . User::count() . ' users and ' . Tweet::whereNull('parent_id')->whereNull('retweet_id')->count() . ' tweets.');
+
+        // 3. SOCIAL INTERACTIONS: FOLLOWS
+        $this->command->info('Simulating social network (Follows)...');
+        foreach ($allUsers as $user) {
+            $toFollowIds = User::where('id', '!=', $user->id)
+                ->inRandomOrder()
+                ->limit(rand(10, 30))
+                ->pluck('id');
+            
+            $user->following()->attach($toFollowIds);
+        }
+
+        // 4. SOCIAL INTERACTIONS: LIKES
+        $this->command->info('Injecting engagement (Likes)...');
+        $bar = $this->command->getOutput()->createProgressBar(count($allUsers));
+        $bar->start();
+
+        foreach ($allUsers as $user) {
+            // Pick random tweets to like (not their own)
+            $tweetIdsToLike = Tweet::where('user_id', '!=', $user->id)
+                ->inRandomOrder()
+                ->limit(rand(50, 100))
+                ->pluck('id');
+            
+            $user->likes()->attach($tweetIdsToLike);
+            $bar->advance();
+        }
+        $bar->finish();
+        $this->command->newLine();
+
+        $this->command->info('✅ Done! The network is now alive with ' . Tweet::count() . ' tweets and thousands of interactions.');
     }
 }

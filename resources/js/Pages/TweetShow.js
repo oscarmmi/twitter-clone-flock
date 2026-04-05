@@ -18,6 +18,8 @@ export default function TweetShow(props) {
 
     const tweetData = JSON.stringify(tweet).replace(/"/g, '&quot;');
     const repliesData = JSON.stringify(tweet.replies_list || []).replace(/"/g, '&quot;');
+    const trendsData = JSON.stringify(props.trends || []).replace(/"/g, '&quot;');
+    const whoToFollowData = JSON.stringify(props.whoToFollow || []).replace(/"/g, '&quot;');
 
     return `
     <div x-data="{
@@ -30,7 +32,38 @@ export default function TweetShow(props) {
         retweeted: ${!!tweet.retweeted_by_user},
         retweetCount: ${tweet.retweets || 0},
         isLoggedIn: ${!!user},
+        unread_count: ${props.auth.unread_notifications_count || 0},
+        trends: ${trendsData},
+        whoToFollow: ${whoToFollowData},
+        followingMap: {},
         loading: false,
+
+        init() {
+            this.whoToFollow.forEach(u => { this.followingMap[u.id] = u.is_following; });
+            
+            // Polling for unreads
+            if (this.isLoggedIn) {
+                setInterval(() => {
+                    axios.get('/notifications/unread-count')
+                        .then(res => { this.unread_count = res.data.count; })
+                        .catch(() => {});
+                }, 15000);
+            }
+        },
+
+        toggleFollow(userId) {
+            if (!this.isLoggedIn) { window.location.href = '/login'; return; }
+            const prev = this.followingMap[userId];
+            this.followingMap[userId] = !prev;
+
+            axios.post('/users/' + userId + '/follow')
+                .then(res => { 
+                    this.followingMap[userId] = res.data.following;
+                    const userObj = this.whoToFollow.find(u => u.id === userId);
+                    if (userObj) userObj.followers = res.data.followers_count;
+                })
+                .catch(() => { this.followingMap[userId] = prev; });
+        },
         toggleLike() {
             if (!this.isLoggedIn) { window.location.href = '/login'; return; }
             this.liked = !this.liked;
@@ -84,6 +117,16 @@ export default function TweetShow(props) {
                     <a href="/" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition group w-fit">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                         <span class="text-xl hidden xl:inline pr-4">Home</span>
+                    </a>
+                    
+                    <a href="/notifications" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition-all duration-200 w-fit relative group">
+                        <div class="relative">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+                            <template x-if="unread_count > 0">
+                                <span class="absolute -top-1 -right-1 bg-[#1d9bf0] text-zinc-100 text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-black" x-text="unread_count"></span>
+                            </template>
+                        </div>
+                        <span class="text-xl hidden xl:inline pr-4">Notifications</span>
                     </a>
                     <template x-if="!isLoggedIn">
                         <div class="space-y-2 mt-4">
@@ -244,15 +287,66 @@ export default function TweetShow(props) {
 
             <!-- Right Sidebar -->
             <aside class="hidden lg:block w-[350px] p-4 space-y-4 shrink-0">
-                <div x-show="!isLoggedIn" class="bg-black border border-zinc-800 p-4 rounded-2xl space-y-3">
-                    <h2 class="text-xl font-bold">New to X?</h2>
-                    <p class="text-zinc-500 text-sm">Sign up to join the conversation.</p>
-                    <a href="/register" class="bg-white text-black w-full block text-center font-bold py-2 rounded-full hover:bg-zinc-200 transition">Create account</a>
-                    <a href="/login" class="bg-transparent border border-zinc-700 text-white w-full block text-center font-bold py-2 rounded-full hover:bg-zinc-800 transition">Sign in</a>
-                </div>
+                <!-- Auth (Guest) -->
+                <template x-if="!isLoggedIn">
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-3">
+                        <h2 class="text-xl font-bold">New to Flock?</h2>
+                        <p class="text-zinc-400 text-sm">Sign up to follow people and see their posts in your timeline.</p>
+                        <a href="/register" class="bg-[#1d9bf0] text-white w-full block text-center font-bold py-2 rounded-full hover:bg-[#1a8cd8] transition">Create account</a>
+                        <a href="/login" class="border border-zinc-600 text-white w-full block text-center font-bold py-2 rounded-full hover:bg-zinc-800 transition">Sign in</a>
+                    </div>
+                </template>
+
+                <!-- Who to follow (logged-in) -->
+                <template x-if="isLoggedIn">
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+                        <h2 class="text-xl font-bold p-4 pb-2">Who to follow</h2>
+                        <div class="divide-y divide-zinc-800/60" x-show="whoToFollow.length > 0">
+                            <template x-for="u in whoToFollow" :key="u.id">
+                                <div class="flex items-center space-x-3 px-4 py-3 hover:bg-white/[0.03] transition group">
+                                    <a :href="'/u/' + u.id" class="shrink-0">
+                                        <img :src="u.avatar" class="w-10 h-10 rounded-full object-cover ring-2 ring-transparent group-hover:ring-[#1d9bf0]/20 transition" alt="">
+                                    </a>
+                                    <div class="flex-1 min-w-0">
+                                        <a :href="'/u/' + u.id" class="font-bold text-sm hover:underline truncate block" x-text="u.name"></a>
+                                        <span class="text-zinc-500 text-xs truncate block" x-text="u.handle"></span>
+                                        <span class="text-zinc-600 text-xs" x-text="u.followers + ' followers'"></span>
+                                    </div>
+                                    <button
+                                        @click="toggleFollow(u.id)"
+                                        :class="followingMap[u.id]
+                                            ? 'border border-zinc-600 text-zinc-100 hover:border-red-500 hover:text-red-400 hover:bg-red-500/5'
+                                            : 'bg-zinc-100 text-black hover:bg-white'"
+                                        class="px-4 py-1.5 rounded-full font-bold text-sm transition-all duration-200 shrink-0"
+                                        x-text="followingMap[u.id] ? 'Following' : 'Follow'"
+                                    ></button>
+                                </div>
+                            </template>
+                        </div>
+                        <div x-show="whoToFollow.length === 0" class="px-4 py-5 text-zinc-500 text-sm">
+                            You&apos;re all caught up!
+                        </div>
+                        <a href="/search" class="block px-4 py-3 text-[#1d9bf0] text-sm hover:bg-zinc-800 transition rounded-b-2xl border-t border-zinc-800/60">
+                            Show more people
+                        </a>
+                    </div>
+                </template>
+
+                <!-- Trends -->
                 <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-                    <h2 class="text-xl font-bold p-4">What's happening</h2>
-                    <div class="p-4 text-[#1d9bf0]">Trending #Laravel</div>
+                    <h2 class="text-xl font-bold p-4">Trends for you</h2>
+                    <div class="divide-y divide-zinc-800">
+                        <template x-for="(trend, index) in trends" :key="index">
+                            <a :href="'/search?q=' + encodeURIComponent(trend.tag)" class="px-4 py-3 hover:bg-zinc-800 transition cursor-pointer flex justify-between items-start block text-inherit no-underline">
+                                <div>
+                                    <p class="text-zinc-500 text-xs">Trending in Technology</p>
+                                    <p class="font-bold" x-text="trend.tag"></p>
+                                    <p class="text-zinc-500 text-xs" x-text="trend.label"></p>
+                                </div>
+                                <span class="text-zinc-600 text-xs mt-1" x-text="'#' + (index + 1)"></span>
+                            </a>
+                        </template>
+                    </div>
                 </div>
             </aside>
         </div>

@@ -232,8 +232,34 @@ class TweetController extends Controller
             ])->values()->all(),
         ];
 
+        $whoToFollow = [];
+        if ($authUser) {
+            $followingIds = DB::table('follower_user')
+                ->where('follower_id', $authUser->id)
+                ->pluck('user_id')
+                ->push($authUser->id)
+                ->unique()
+                ->values();
+
+            $whoToFollow = User::whereNotIn('id', $followingIds)
+                ->withCount('followers')
+                ->inRandomOrder()
+                ->limit(5)
+                ->get()
+                ->map(fn($u) => [
+                    'id'           => $u->id,
+                    'name'         => $u->name,
+                    'handle'       => '@' . strtolower(str_replace(' ', '', $u->name)),
+                    'avatar'       => $u->avatar ?? 'https://i.pravatar.cc/150?u=' . $u->id,
+                    'followers'    => $u->followers_count,
+                    'is_following' => false,
+                ])->values()->all();
+        }
+
         return inertia('TweetShow', [
-            'tweet' => $tweetData,
+            'tweet'       => $tweetData,
+            'trends'      => $this->getTrends(),
+            'whoToFollow' => $whoToFollow,
         ]);
     }
 

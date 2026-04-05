@@ -351,7 +351,7 @@ export default function Welcome(props) {
         <!-- Compose Modal (logged-in only) -->
         <div
             x-show="showComposeModal"
-            class="fixed inset-0 z-[100] flex items-start justify-center pt-[5%] bg-[#5b7083]/40 backdrop-blur-[1px]"
+            class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
             x-transition:enter="transition ease-out duration-200"
             x-transition:enter-start="opacity-0"
             x-transition:enter-end="opacity-100"
@@ -360,14 +360,23 @@ export default function Welcome(props) {
             x-transition:leave-end="opacity-0"
             style="display:none"
         >
-            <div @click.away="showComposeModal = false" class="bg-black w-full max-w-[600px] rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 mx-4">
-                <div class="p-4 flex items-center border-b border-zinc-800">
-                    <button @click="showComposeModal = false" class="p-2 hover:bg-zinc-900 rounded-full transition">
+            <div @click.away="showComposeModal = false" class="bg-black w-full max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl border border-zinc-800 flex flex-col">
+                <div class="p-4 flex items-center border-b border-zinc-800 sticky top-0 bg-black z-10">
+                    <button @click="showComposeModal = false" class="p-2 hover:bg-zinc-900 rounded-full transition text-zinc-100">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
+                    <div class="ml-auto">
+                        <button 
+                            @click="postTweet(modalTweetContent)"
+                            :disabled="!modalTweetContent.trim() || isLoading"
+                            class="xl:hidden bg-[#1d9bf0] disabled:opacity-50 text-white px-4 py-1.5 rounded-full font-bold text-sm"
+                        >
+                            Post
+                        </button>
+                    </div>
                 </div>
-                <div class="p-4 flex space-x-3">
-                    <img :src="user.avatar" class="w-10 h-10 rounded-full shrink-0" alt="">
+                <div class="p-4 flex space-x-3 overflow-y-auto flex-1">
+                    <img :src="user.avatar" class="w-10 h-10 rounded-full shrink-0 border border-zinc-900" alt="">
                     <div class="flex-1">
                         <textarea
                             x-model="modalTweetContent"

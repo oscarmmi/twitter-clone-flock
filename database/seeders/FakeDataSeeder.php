@@ -136,8 +136,18 @@ class FakeDataSeeder extends Seeder
         $this->command->info('🌱 Starting FakeDataSeeder with Social Interactions...');
 
         // 1. CREATE ALL USERS FIRST
-        $this->command->info('Creating 50 active users...');
+        $this->command->info('Creating 50 active users and 1 test user...');
         $allUsers = [];
+
+        // Create the requested test user
+        $testUser = User::create([
+            'name'     => 'Test User',
+            'email'    => 'testuser@theflock.com',
+            'password' => Hash::make('testinguser'),
+            'created_at' => now()->subDays(rand(30, 60)),
+        ]);
+        $allUsers[] = $testUser;
+
         for ($i = 0; $i < 50; $i++) {
             $firstName = $firstNames[$i];
             $lastName  = $lastNames[$i];

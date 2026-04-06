@@ -1,7 +1,8 @@
-import { Icons, ReplyModal } from '../components/icons.js';
+import { Icons, TweetCard, ReplyModal } from '../components/icons.js';
 
 export default function UserProfile(props) {
     const user = props.auth.user;
+
     const profileUser = props.profileUser;
     const tweets = props.tweets;
 
@@ -26,6 +27,11 @@ export default function UserProfile(props) {
         whoToFollow: ${whoToFollowData},
         isLoggedIn: ${!!user},
         unread_count: ${props.auth.unread_notifications_count || 0},
+        pagination: ${JSON.stringify(props.pagination || { current_page: 1, has_more: false }).replace(/"/g, '&quot;')},
+
+        isLoadingMore: false,
+        currentPage: ${props.pagination?.current_page || 1},
+        hasMore: ${props.pagination?.has_more || false},
         followingMap: {},
         isFollowingProfile: ${!!profileUser.is_following},
         followerCount: ${profileUser.followers_count},
@@ -33,9 +39,22 @@ export default function UserProfile(props) {
         showComposeModal: false,
         modalTweetContent: '',
 
+
         init() {
             this.whoToFollow.forEach(u => { this.followingMap[u.id] = u.is_following; });
             
+            // Intersection Observer for infinite scroll
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    this.loadMore();
+                }
+            }, { threshold: 0.1, rootMargin: '200px' });
+            
+            this.$nextTick(() => {
+                const trigger = document.getElementById('infinite-scroll-trigger');
+                if (trigger) observer.observe(trigger);
+            });
+
             // Polling for unreads
             if (this.isLoggedIn) {
                 setInterval(() => {
@@ -45,6 +64,29 @@ export default function UserProfile(props) {
                 }, 15000);
             }
         },
+
+        loadMore() {
+            if (this.isLoadingMore || !this.hasMore) return;
+            this.isLoadingMore = true;
+            this.currentPage++;
+
+            axios.get('/u/' + this.profile.id + '/tweets', {
+                params: { page: this.currentPage }
+            })
+            .then(res => {
+                // Prepend to the top as requested
+                this.tweets.unshift(...res.data.tweets);
+                this.hasMore = res.data.has_more;
+            })
+            .catch(() => {
+                this.currentPage--;
+            })
+            .finally(() => {
+                this.isLoadingMore = false;
+            });
+        },
+
+
 
         toggleFollow(userId) {
             if (!this.isLoggedIn) { window.location.href = '/login'; return; }
@@ -216,43 +258,22 @@ export default function UserProfile(props) {
                     <div class="flex-1 py-4 text-center font-medium text-zinc-500 cursor-pointer hover:bg-zinc-900 transition">Likes</div>
                 </div>
 
-                <!-- User Tweets Feed -->
-                <div class="divide-y divide-zinc-800">
-                    <template x-for="tweet in tweets" :key="tweet.id">
-                        <div class="p-4 hover:bg-white/[0.03] transition flex space-x-3 cursor-pointer" @click="window.location.href = '/tweets/' + tweet.id">
-                            <img :src="tweet.avatar" class="w-10 h-10 rounded-full shrink-0 object-cover" alt="">
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center space-x-1">
-                                    <span class="font-bold hover:underline" x-text="tweet.user"></span>
-                                    <span class="text-zinc-500 text-sm truncate" x-text="tweet.handle"></span>
-                                    <span class="text-zinc-500 text-sm">·</span>
-                                    <span class="text-zinc-500 text-sm" x-text="tweet.time"></span>
-                                </div>
-                                <p class="mt-1 text-zinc-100 whitespace-pre-wrap break-words" x-text="tweet.content"></p>
-                                
-                                <div class="flex items-center justify-between mt-3 text-zinc-500 max-w-md">
-                                    <div class="flex items-center space-x-2 hover:text-blue-400 group">
-                                        <div class="p-2 group-hover:bg-blue-500/10 rounded-full transition">${Icons.reply}</div>
-                                        <span class="text-xs" x-text="tweet.replies"></span>
-                                    </div>
-                                    <div class="flex items-center space-x-2 hover:text-green-400 group" :class="tweet.retweeted_by_user ? 'text-green-400' : ''">
-                                        <div class="p-2 group-hover:bg-green-500/10 rounded-full transition">${Icons.retweet}</div>
-                                        <span class="text-xs" x-text="tweet.retweets"></span>
-                                    </div>
-                                    <div class="flex items-center space-x-2 hover:text-pink-400 group" :class="tweet.liked_by_user ? 'text-pink-400' : ''">
-                                        <div class="p-2 group-hover:bg-pink-500/10 rounded-full transition">
-                                            <svg class="w-4 h-4" :fill="tweet.liked_by_user ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20.884 13.19c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3c-4.379-2.55-7.029-5.19-8.382-7.67-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z"/></svg>
-                                        </div>
-                                        <span class="text-xs" x-text="tweet.likes"></span>
-                                    </div>
-                                    <div class="flex items-center space-x-2 hover:text-blue-400 group">
-                                        <div class="p-2 group-hover:bg-blue-500/10 rounded-full transition">${Icons.share}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                <!-- Infinite Scroll Trigger & Loader (TOP) -->
+                <div id="infinite-scroll-trigger" class="p-8 flex justify-center">
+                    <template x-if="isLoadingMore">
+                        <div class="animate-spin h-6 w-6 border-2 border-zinc-700 border-t-[#1d9bf0] rounded-full"></div>
+                    </template>
+                    <template x-if="!hasMore && tweets.length > 0">
+                        <p class="text-zinc-500 text-sm">No more posts to show</p>
                     </template>
                 </div>
+
+                <!-- User Tweets Feed -->
+                <div class="divide-y divide-zinc-800">
+                    ${TweetCard()}
+                </div>
+
+
             </main>
 
             <!-- Right Sidebar -->

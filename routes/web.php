@@ -11,6 +11,8 @@ use App\Http\Controllers\FollowController;
 Route::get('/', [TweetController::class, 'welcome'])->name('welcome');
 Route::get('/tweets/{tweet}', [TweetController::class, 'show'])->name('tweets.show');
 Route::get('/search', [TweetController::class, 'search'])->name('search');
+Route::get('/tweets-fetch', [TweetController::class, 'fetch'])->name('tweets.fetch');
+
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [TweetController::class, 'index'])->name('dashboard');
@@ -28,6 +30,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Profile (public view)
     Route::get('/u/{user}', [UserController::class, 'show'])->name('user.show');
+    Route::get('/u/{user}/tweets', [UserController::class, 'fetch'])->name('user.tweets.fetch');
+
 
     // Notifications
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');

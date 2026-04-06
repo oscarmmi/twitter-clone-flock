@@ -16,24 +16,14 @@ class UserController extends Controller
         
         $user->loadCount(['followers', 'following']);
         
-        $tweets = $user->tweets()
+        $paginator = $user->tweets()
             ->whereNull('parent_id')
             ->with(['user', 'likes', 'retweets', 'replies', 'replies.user'])
             ->latest()
-            ->get()
-            ->map(fn($tweet) => [
-                'id' => $tweet->id,
-                'user' => $tweet->user->name,
-                'handle' => '@' . strtolower(str_replace(' ', '', $tweet->user->name)),
-                'time' => $tweet->created_at->diffForHumans(short: true),
-                'content' => $tweet->body,
-                'likes' => $tweet->likes->count(),
-                'retweets' => $tweet->retweets->count(),
-                'replies' => $tweet->replies->count(),
-                'avatar' => $tweet->user->avatar ?? "https://i.pravatar.cc/150?u=" . $tweet->user_id,
-                'liked_by_user' => $authUser ? $tweet->likes->contains('id', $authUser->id) : false,
-                'retweeted_by_user' => $authUser ? $tweet->retweets->contains('user_id', $authUser->id) : false,
-            ]);
+            ->paginate(20);
+
+        $tweets = $this->mapTweets($paginator, $authUser);
+
 
         $isFollowing = $authUser ? $authUser->following()->where('users.id', $user->id)->exists() : false;
 
@@ -77,8 +67,47 @@ class UserController extends Controller
             'tweets' => $tweets,
             'trends' => $this->getTrends(),
             'whoToFollow' => $whoToFollow,
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'has_more' => $paginator->hasMorePages(),
+            ]
         ]);
     }
+
+    public function fetch(User $user, Request $request)
+    {
+        $authUser = Auth::user();
+
+        $paginator = $user->tweets()
+            ->whereNull('parent_id')
+            ->with(['user', 'likes', 'retweets', 'replies', 'replies.user'])
+            ->latest()
+            ->paginate(20);
+
+        return response()->json([
+            'tweets' => $this->mapTweets($paginator, $authUser),
+            'has_more' => $paginator->hasMorePages(),
+        ]);
+    }
+
+    private function mapTweets($paginator, $authUser = null)
+    {
+        return collect($paginator->items())->map(fn($tweet) => [
+            'id' => $tweet->id,
+            'user' => $tweet->user->name,
+            'handle' => '@' . strtolower(str_replace(' ', '', $tweet->user->name)),
+            'time' => $tweet->created_at->diffForHumans(short: true),
+            'content' => $tweet->body,
+            'likes' => $tweet->likes->count(),
+            'retweets' => $tweet->retweets->count(),
+            'replies' => $tweet->replies->count(),
+            'avatar' => $tweet->user->avatar ?? "https://i.pravatar.cc/150?u=" . $tweet->user_id,
+            'liked_by_user' => $authUser ? $tweet->likes->contains('id', $authUser->id) : false,
+            'retweeted_by_user' => $authUser ? $tweet->retweets->contains('user_id', $authUser->id) : false,
+            'replies_list' => [],
+        ])->values()->all();
+    }
+
 
     private function getTrends()
     {

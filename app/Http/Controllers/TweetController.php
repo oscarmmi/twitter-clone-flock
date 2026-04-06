@@ -15,55 +15,22 @@ class TweetController extends Controller
     {
         $authUser = Auth::user();
 
-        $tweets = Tweet::whereNull('parent_id')   // exclude replies
+        $paginator = Tweet::whereNull('parent_id')
             ->with([
                 'user', 'likes', 'retweets', 'replies', 'replies.user',
-                'retweet', 'retweet.user', 'retweet.likes',  // load original tweet when this is a retweet
+                'retweet', 'retweet.user', 'retweet.likes',
             ])
             ->latest()
-            ->get()
-            ->map(function ($tweet) use ($authUser) {
-                // If this is a retweet, show the original tweet's content
-                $source = $tweet->retweet_id ? $tweet->retweet : $tweet;
+            ->paginate(20);
 
-                if (!$source || !$source->user) return null; // skip broken retweets
-
-                return [
-                    'id' => $source->id,
-                    'user' => $source->user->name,
-                    'handle' => '@' . strtolower(str_replace(' ', '', $source->user->name)),
-                    'time' => $source->created_at->diffForHumans(short: true),
-                    'content' => $source->body,
-                    'likes' => $source->likes->count(),
-                    'retweets' => $source->retweets->count(),
-                    'replies' => $source->replies()->count(),
-                    'avatar' => $source->user->avatar ?? "https://i.pravatar.cc/150?u=" . $source->user_id,
-                    'liked_by_user' => $authUser ? $source->likes->contains('id', $authUser->id) : false,
-                    'retweeted_by_user' => $authUser ? $source->retweets->contains('user_id', $authUser->id) : false,
-                    'replies_list' => $source->replies()->with('user')->latest()->get()->map(fn($r) => [
-                        'id' => $r->id,
-                        'user' => $r->user->name,
-                        'handle' => '@' . strtolower(str_replace(' ', '', $r->user->name)),
-                        'avatar' => $r->user->avatar ?? "https://i.pravatar.cc/150?u=" . $r->user_id,
-                        'body' => $r->body,
-                        'time' => $r->created_at->diffForHumans(short: true),
-                    ])->values()->all(),
-                    // Retweet banner info
-                    'is_retweet' => !!$tweet->retweet_id,
-                    'retweeted_by' => $tweet->retweet_id ? $tweet->user->name : null,
-                    'retweeted_by_handle' => $tweet->retweet_id ? ('@' . strtolower(str_replace(' ', '', $tweet->user->name))) : null,
-                ];
-            })
-            ->filter()
-            ->values();
+        $tweets = $this->mapTweets($paginator, $authUser);
 
         $whoToFollow = [];
         if ($authUser) {
-            // Query the pivot table directly to avoid BelongsToMany pluck ambiguity in PostgreSQL
             $followingIds = DB::table('follower_user')
                 ->where('follower_id', $authUser->id)
                 ->pluck('user_id')
-                ->push($authUser->id)   // also exclude self
+                ->push($authUser->id)
                 ->unique()
                 ->values();
 
@@ -86,58 +53,31 @@ class TweetController extends Controller
             'tweets'       => $tweets,
             'trends'       => $this->getTrends(),
             'whoToFollow'  => $whoToFollow,
+            'pagination'   => [
+                'current_page' => $paginator->currentPage(),
+                'has_more'     => $paginator->hasMorePages(),
+            ]
         ]);
-
     }
+
 
     public function index(Request $request)
     {
         $user = Auth::user();
         
-        // Get tweets from user and people they follow
         $followingIds = $user->following()->pluck('users.id');
         $followingIds->push($user->id);
 
-        $tweets = Tweet::whereIn('user_id', $followingIds)
-            ->whereNull('parent_id')               // exclude replies
+        $paginator = Tweet::whereIn('user_id', $followingIds)
+            ->whereNull('parent_id')
             ->with([
                 'user', 'likes', 'retweets', 'replies', 'replies.user',
                 'retweet', 'retweet.user', 'retweet.likes',
             ])
             ->latest()
-            ->get()
-            ->map(function ($tweet) use ($user) {
-                $source = $tweet->retweet_id ? $tweet->retweet : $tweet;
+            ->paginate(20);
 
-                if (!$source || !$source->user) return null;
-
-                return [
-                    'id' => $source->id,
-                    'user' => $source->user->name,
-                    'handle' => '@' . strtolower(str_replace(' ', '', $source->user->name)),
-                    'time' => $source->created_at->diffForHumans(short: true),
-                    'content' => $source->body,
-                    'likes' => $source->likes->count(),
-                    'retweets' => $source->retweets->count(),
-                    'replies' => $source->replies()->count(),
-                    'avatar' => $source->user->avatar ?? "https://i.pravatar.cc/150?u=" . $source->user_id,
-                    'liked_by_user' => $source->likes->contains('id', $user->id),
-                    'retweeted_by_user' => $source->retweets->contains('user_id', $user->id),
-                    'replies_list' => $source->replies()->with('user')->latest()->get()->map(fn($r) => [
-                        'id' => $r->id,
-                        'user' => $r->user->name,
-                        'handle' => '@' . strtolower(str_replace(' ', '', $r->user->name)),
-                        'avatar' => $r->user->avatar ?? "https://i.pravatar.cc/150?u=" . $r->user_id,
-                        'body' => $r->body,
-                        'time' => $r->created_at->diffForHumans(short: true),
-                    ])->values()->all(),
-                    'is_retweet' => !!$tweet->retweet_id,
-                    'retweeted_by' => $tweet->retweet_id ? $tweet->user->name : null,
-                    'retweeted_by_handle' => $tweet->retweet_id ? ('@' . strtolower(str_replace(' ', '', $tweet->user->name))) : null,
-                ];
-            })
-            ->filter()
-            ->values();
+        $tweets = $this->mapTweets($paginator, $user);
 
         $whoToFollow = DB::table('users')
             ->whereNotIn('id', DB::table('follower_user')->where('follower_id', $user->id)->pluck('user_id')->push($user->id))
@@ -157,8 +97,66 @@ class TweetController extends Controller
             'tweets'      => $tweets,
             'trends'      => $this->getTrends(),
             'whoToFollow' => $whoToFollow,
+            'pagination'  => [
+                'current_page' => $paginator->currentPage(),
+                'has_more'     => $paginator->hasMorePages(),
+            ]
         ]);
     }
+
+    public function fetch(Request $request)
+    {
+        $user = Auth::user();
+        $tab  = $request->input('tab', 'for-you');
+
+        $query = Tweet::whereNull('parent_id')
+            ->with([
+                'user', 'likes', 'retweets', 'replies', 'replies.user',
+                'retweet', 'retweet.user', 'retweet.likes',
+            ])
+            ->latest();
+
+        if ($tab === 'following' && $user) {
+            $followingIds = $user->following()->pluck('users.id')->push($user->id);
+            $query->whereIn('user_id', $followingIds);
+        }
+
+        $paginator = $query->paginate(20);
+
+        return response()->json([
+            'tweets'   => $this->mapTweets($paginator, $user),
+            'has_more' => $paginator->hasMorePages(),
+        ]);
+    }
+
+    private function mapTweets($paginator, $authUser = null)
+    {
+        return collect($paginator->items())->map(function ($tweet) use ($authUser) {
+            $source = $tweet->retweet_id ? $tweet->retweet : $tweet;
+
+            if (!$source || !$source->user) return null;
+
+            return [
+                'id' => $tweet->id,
+                'original_id' => $source->id,
+                'user' => $source->user->name,
+                'handle' => '@' . strtolower(str_replace(' ', '', $source->user->name)),
+                'time' => $source->created_at->diffForHumans(short: true),
+                'content' => $source->body,
+                'likes' => $source->likes->count(),
+                'retweets' => $source->retweets->count(),
+                'replies' => $source->replies()->count(),
+                'avatar' => $source->user->avatar ?? "https://i.pravatar.cc/150?u=" . $source->user_id,
+                'liked_by_user' => $authUser ? $source->likes->contains('id', $authUser->id) : false,
+                'retweeted_by_user' => $authUser ? $source->retweets->contains('user_id', $authUser->id) : false,
+                'replies_list' => [],
+                'is_retweet' => !!$tweet->retweet_id,
+                'retweeted_by' => $tweet->retweet_id ? $tweet->user->name : null,
+                'retweeted_by_handle' => $tweet->retweet_id ? ('@' . strtolower(str_replace(' ', '', $tweet->user->name))) : null,
+            ];
+        })->filter()->values();
+    }
+
 
     private function getTrends(): array
     {

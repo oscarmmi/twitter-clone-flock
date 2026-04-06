@@ -35,10 +35,35 @@ export default function Welcome(props) {
         tweets: ${tweetsData},
         trends: ${trendsData},
         whoToFollow: ${whoToFollowData},
+        pagination: ${JSON.stringify(props.pagination || { current_page: 1, has_more: false }).replace(/"/g, '&quot;')},
+        isLoadingMore: false,
+        currentPage: ${props.pagination?.current_page || 1},
+        hasMore: ${props.pagination?.has_more || false},
+
         followingMap: {},
         init() {
             this.whoToFollow.forEach(u => { this.followingMap[u.id] = u.is_following; });
             
+            // Watch for tab changes (optional: if you want tab switching to be client-side)
+            this.$watch('activeTab', (val) => {
+                this.tweets = [];
+                this.currentPage = 1;
+                this.hasMore = true;
+                this.loadMore();
+            });
+
+            // Intersection Observer for infinite scroll
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    this.loadMore();
+                }
+            }, { threshold: 0.1, rootMargin: '200px' });
+            
+            this.$nextTick(() => {
+                const trigger = document.getElementById('infinite-scroll-trigger');
+                if (trigger) observer.observe(trigger);
+            });
+
             // Polling for unread notifications every 15 seconds
             if (this.isLoggedIn) {
                 setInterval(() => {
@@ -48,6 +73,41 @@ export default function Welcome(props) {
                 }, 15000);
             }
         },
+        loadMore() {
+            if (this.isLoadingMore || !this.hasMore) return;
+            this.isLoadingMore = true;
+            
+            const nextPage = this.tweets.length === 0 ? 1 : this.currentPage + 1;
+
+            axios.get('/tweets-fetch', {
+                params: {
+                    page: nextPage,
+                    tab: this.activeTab
+                }
+            })
+            .then(res => {
+                if (nextPage === 1) {
+                    this.tweets = res.data.tweets;
+                } else {
+                    // Prepend older tweets to the top as requested
+                    this.tweets.unshift(...res.data.tweets);
+                    
+                    // Maintain scroll position if possible (optional)
+                    // This is tricky in vanilla/Alpine without a wrapper, 
+                    // but since the user asked for 'top' scroll retrieval, we unshift.
+                }
+                this.currentPage = nextPage;
+                this.hasMore = res.data.has_more;
+            })
+            .catch((err) => {
+                console.error('Fetch error:', err);
+            })
+            .finally(() => {
+                this.isLoadingMore = false;
+            });
+        },
+
+
         toggleFollow(userId) {
             if (!this.isLoggedIn) { window.location.href = '/login'; return; }
             
@@ -243,10 +303,22 @@ export default function Welcome(props) {
                     </div>
                 </template>
 
+                <!-- Infinite Scroll Trigger & Loader (TOP) -->
+                <div id="infinite-scroll-trigger" class="p-8 flex justify-center">
+                    <template x-if="isLoadingMore">
+                        <div class="animate-spin h-6 w-6 border-2 border-zinc-700 border-t-[#1d9bf0] rounded-full"></div>
+                    </template>
+                    <template x-if="!hasMore && tweets.length > 0 && activeTab === 'following'">
+                        <p class="text-zinc-500 text-sm">You&apos;re all caught up</p>
+                    </template>
+                </div>
+
                 <!-- Feed -->
                 <div class="divide-y divide-zinc-800">
                     ${TweetCard()}
                 </div>
+
+
             </main>
 
             <!-- ── Right Sidebar ── -->

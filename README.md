@@ -26,7 +26,19 @@ Execute `composer install` inside the application container:
 docker-compose exec app composer install
 ```
 
-### 3. Install Frontend Dependencies
+### 3. Environment Setup
+
+Copy the example environment file and generate a unique application key:
+
+```bash
+# Copy .env
+copy .env.example .env
+
+# Generate APP_KEY inside the container
+docker-compose exec app php artisan key:generate
+```
+
+### 4. Install Frontend Dependencies
 
 Install the NPM packages for the frontend:
 
@@ -34,7 +46,7 @@ Install the NPM packages for the frontend:
 docker-compose exec app npm install
 ```
 
-### 4. Build Frontend Assets
+### 5. Build Frontend Assets
 
 Compile the frontend assets:
 
@@ -42,7 +54,7 @@ Compile the frontend assets:
 docker-compose exec app npm run build
 ```
 
-### 5. Run Migrations
+### 6. Run Migrations
 
 Run the database migrations to set up your tables:
 
@@ -50,7 +62,7 @@ Run the database migrations to set up your tables:
 docker-compose exec app php artisan migrate
 ```
 
-### 6. Seed the Database
+### 7. Seed the Database
 
 Populate the database with fake data by running the seeder. This seeder is located at `database/seeders/FakeDataSeeder.php` and it creates a test user for you to log in:
 

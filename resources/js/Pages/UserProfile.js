@@ -284,29 +284,51 @@ export default function UserProfile(props) {
 
             <!-- Right Sidebar -->
             <aside class="hidden lg:block w-[350px] p-4 space-y-4 shrink-0">
-                <!-- Who to follow -->
+                <!-- Who to follow (logged-in users only) -->
                 <template x-if="isLoggedIn">
                     <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
                         <h2 class="text-xl font-bold p-4 pb-2">Who to follow</h2>
+
+                        <!-- Suggestions list -->
                         <div class="divide-y divide-zinc-800/60" x-show="whoToFollow.length > 0">
                             <template x-for="u in whoToFollow" :key="u.id">
                                 <div class="flex items-center space-x-3 px-4 py-3 hover:bg-white/[0.03] transition group">
+                                    <!-- Avatar -->
                                     <a :href="'/u/' + u.id" class="shrink-0">
-                                        <img :src="u.avatar" class="w-10 h-10 rounded-full object-cover ring-2 ring-transparent group-hover:ring-[#1d9bf0]/20 transition" alt="">
+                                        <img
+                                            :src="u.avatar || 'https://i.pravatar.cc/150?u=' + u.id"
+                                            class="w-10 h-10 rounded-full object-cover ring-2 ring-transparent group-hover:ring-[#1d9bf0]/20 transition"
+                                            alt=""
+                                        >
                                     </a>
+                                    <!-- Name / handle -->
                                     <div class="flex-1 min-w-0">
                                         <a :href="'/u/' + u.id" class="font-bold text-sm hover:underline truncate block" x-text="u.name"></a>
                                         <span class="text-zinc-500 text-xs truncate block" x-text="u.handle"></span>
+                                        <span class="text-zinc-600 text-xs" x-text="(u.followers || 0) + ' followers'"></span>
                                     </div>
+                                    <!-- Follow / Following button -->
                                     <button
                                         @click="toggleFollow(u.id)"
-                                        :class="followingMap[u.id] ? 'border border-zinc-600 text-zinc-100' : 'bg-zinc-100 text-black hover:bg-white'"
-                                        class="px-4 py-1.5 rounded-full font-bold text-sm transition shrink-0"
+                                        :class="followingMap[u.id]
+                                            ? 'border border-zinc-600 text-zinc-100 hover:border-red-500 hover:text-red-400 hover:bg-red-500/5'
+                                            : 'bg-zinc-100 text-black hover:bg-white'"
+                                        class="px-4 py-1.5 rounded-full font-bold text-sm transition-all duration-200 shrink-0"
                                         x-text="followingMap[u.id] ? 'Following' : 'Follow'"
                                     ></button>
                                 </div>
                             </template>
                         </div>
+
+                        <!-- Empty state -->
+                        <div x-show="whoToFollow.length === 0" class="px-4 py-5 text-zinc-500 text-sm">
+                            You&apos;re all caught up!
+                        </div>
+
+                        <!-- Show more link -->
+                        <a href="/search" class="block px-4 py-3 text-[#1d9bf0] text-sm hover:bg-zinc-800 transition rounded-b-2xl border-t border-zinc-800/60">
+                            Show more people
+                        </a>
                     </div>
                 </template>
 

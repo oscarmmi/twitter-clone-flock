@@ -62,9 +62,9 @@ export default function ProfileEdit(props) {
             
             <!-- Sidebar -->
             <aside class="w-[72px] xl:w-[275px] flex flex-col items-center xl:items-start p-2 sm:p-4 sticky top-0 h-screen overflow-y-auto shrink-0 transition-all">
-                <div class="hover:bg-zinc-900 rounded-full p-3 transition mb-2">
+                <a href="${user ? '/dashboard' : '/'}" class="hover:bg-zinc-900 rounded-full p-3 transition mb-2 block w-fit">
                     ${Icons.twitter}
-                </div>
+                </a>
                 <nav class="flex-1 space-y-1 w-full text-zinc-100">
                     <a href="/dashboard" class="flex items-center space-x-5 p-3 hover:bg-zinc-900 rounded-full transition group w-fit">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>

@@ -125,7 +125,7 @@ Authentication is handled using Laravel Breeze with standard session-based authe
 
 **4. Known trade-offs and limitations.**
 *   **Performance on Timeline:** As the number of followed users and tweets grows, compiling the timeline by querying the entire social graph can become slow. A future optimization would involve pre-computing feeds or implementing caching (like Redis) for timeline generation.
-*   **Authentication Mechanism:** By sticking to session-based auth, it is optimized for web clients. If a mobile app or external API were to be built later, we might need to implement token-based auth (like Laravel Sanctum or Passport) alongside the existing session auth.
+*   **Authentication Mechanism:** By sticking to session-based auth, it is optimized for web clients. If a mobile app or external API were to be built later, we might need to implement token-based auth (like Laravel Breeze) alongside the existing session auth.
 *   **Frontend Interactivity:** Using Alpine.js embedded in Blade/Inertia HTML templates keeps the application simple and bundle sizes small. However, for highly complex, state-heavy UI components, a full virtual DOM framework (like Vue or React) might scale better in terms of maintainability.
 
 **5. What AI tools did you use and how did you leverage them?**

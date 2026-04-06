@@ -13,6 +13,12 @@ export default function UserProfile(props) {
         id: user?.id || null
     }).replace(/"/g, '&quot;');
 
+    // Globals used by TweetCard / ReplyModal
+    window._isLoggedIn          = !!user;
+    window._currentUserAvatar   = user?.avatar || `https://i.pravatar.cc/150?u=${user?.id || 'me'}`;
+    window._currentUserName     ||= user?.name || null;
+    window._currentUserHandle   ||= user ? '@' + user.name.toLowerCase().replace(/\s+/g, '') : null;
+
     const profileData = JSON.stringify(profileUser).replace(/"/g, '&quot;');
     const tweetsData = JSON.stringify(tweets || []).replace(/"/g, '&quot;');
     const trendsData = JSON.stringify(props.trends || []).replace(/"/g, '&quot;');

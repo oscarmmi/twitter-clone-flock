@@ -136,8 +136,19 @@ class FakeDataSeeder extends Seeder
         $this->command->info('🌱 Starting FakeDataSeeder with Social Interactions...');
 
         // 1. CREATE ALL USERS FIRST
-        $this->command->info('Creating 50 active users...');
+        $this->command->info('Creating 50 active users + hardcoded test user...');
         $allUsers = [];
+
+        // Add hardcoded test user (Delete if exists to allow re-seeding)
+        User::where('email', 'testuser@theflock.com')->delete();
+        $testUser = User::create([
+            'name'     => 'Test User',
+            'email'    => 'testuser@theflock.com',
+            'password' => Hash::make('testinguser'),
+            'created_at' => now()->subDays(60),
+        ]);
+        $allUsers[] = $testUser;
+
         for ($i = 0; $i < 50; $i++) {
             $firstName = $firstNames[$i];
             $lastName  = $lastNames[$i];
@@ -202,6 +213,32 @@ class FakeDataSeeder extends Seeder
                 ->pluck('id');
             
             $user->likes()->attach($tweetIdsToLike);
+            $bar->advance();
+        }
+        $bar->finish();
+        $this->command->newLine();
+
+        // 5. SOCIAL INTERACTIONS: RETWEETS
+        $this->command->info('Injecting engagement (Retweets)...');
+        $bar = $this->command->getOutput()->createProgressBar(count($allUsers));
+        $bar->start();
+
+        foreach ($allUsers as $user) {
+            // Pick random tweets to retweet
+            $tweetIdsToRetweet = Tweet::where('user_id', '!=', $user->id)
+                ->whereNull('retweet_id') // Don't retweet a retweet for simplicity
+                ->inRandomOrder()
+                ->limit(rand(5, 15))
+                ->pluck('id');
+            
+            foreach ($tweetIdsToRetweet as $tweetId) {
+                Tweet::create([
+                    'user_id'    => $user->id,
+                    'retweet_id' => $tweetId,
+                    'created_at' => now()->subMinutes(rand(1, 43200)),
+                    'updated_at' => now(),
+                ]);
+            }
             $bar->advance();
         }
         $bar->finish();

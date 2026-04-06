@@ -14,7 +14,7 @@ if (el) {
     router.page = pageData;
 
     const resolve = (name) => {
-        const pages = import.meta.glob('./Pages/**/*.js', { eager: true });
+        const pages = import.meta.glob(['./Pages/**/*.js', '!./Pages/**/*.test.js'], { eager: true });
         const path = `./Pages/${name}.js`;
         return pages[path]?.default;
     };
